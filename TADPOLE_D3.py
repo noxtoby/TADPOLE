@@ -132,46 +132,6 @@ def representsInt(s):
 #********************************************************************#
 if __name__ == '__main__':
     dataSaveLocation = os.getcwd()
-    # runDate = datetime.now().strftime("%Y%m%d")
-    
-    #*** File locations and names
-    # dataLocation = '/Users/noxtoby/Documents/Research/UCLPOND/Projects/201612 POND challenge/Data/ADNITables'
-    # Enrollment = os.path.join(dataLocation,'Enrollment')
-    # Diagnosis = os.path.join(dataLocation,'Diagnosis')
-    # Imaging = os.path.join(dataLocation,'Imaging')
-    dataLocation = os.getcwd()
-    
-    #*** Active, passed screening, etc.
-    REGISTRY_file = 'REGISTRY.csv' # REGISTRY_file = os.path.join(Enrollment,'REGISTRY.csv')
-    ROSTER_file   = 'ROSTER.csv' # ROSTER_file = os.path.join(Enrollment,'ROSTER.csv')
-    #*** specifics on EMCI/LMCI/etc
-    ARM_file = 'ARM.csv' # ARM_file = os.path.join(Enrollment,'ARM.csv')
-    DXSUM_file = 'DXSUM_PDXCONV_ADNIALL.csv' # DXSUM_file = os.path.join(Diagnosis,'DXSUM_PDXCONV_ADNIALL.csv')
-    
-    #*** ADNI tables
-    REGISTRY_table = pd.read_csv(REGISTRY_file)
-    ARM_table = pd.read_csv(ARM_file)
-    DXSUM_table = pd.read_csv(DXSUM_file)
-    
-    #*** ADNI preliminaries from training slides part 2 PDF document
-    DXSUM_table = generateDXCHANGE(DXSUM_table)
-    DXARM_table = mergeDX_ARM(DXSUM_table,ARM_table)
-    DXARM_table = assignBaselineDX(DXARM_table)
-    
-    #*** Select ADNI2 participants
-    REGISTRY_ADNI2_bool = (REGISTRY_table['Phase']=='ADNI2') & (REGISTRY_table['RGSTATUS']==1)
-    REGISTRY_table_ADNI2 = REGISTRY_table.iloc[REGISTRY_ADNI2_bool.values]
-    
-    #*** Merge tables to find potential ADNI3 rollovers
-    #* Join DXARM to REGISTRY
-    DXARMREG_table = DXARM_table.merge(REGISTRY_table_ADNI2,'left',['RID','Phase','VISCODE'])
-    #* Remove missing values (shouldn't be any)
-    DXCHANGE_notmissing = ~np.isnan(DXARMREG_table['DXCHANGE']).values
-    DXARMREG_table = DXARMREG_table.iloc[DXCHANGE_notmissing]
-    #* ADNI2 and active
-    table_ADNI2_active = DXARMREG_table.iloc[((DXARMREG_table.Phase=='ADNI2') & (DXARMREG_table.PTSTATUS==1)).values]
-    D2_RID = table_ADNI2_active.RID.unique()
-    D2_RID.sort()
     
     #*** TADPOLE D2: historical data for D2_RID
     D1_file = 'TADPOLE_D1_D2.csv' 
@@ -216,7 +176,7 @@ if __name__ == '__main__':
     D3_columns = D3_columns + UCSFFSL_columns
     
     #* Extract selected individuals and columns from D1 & D2, then select most recent visit
-    D3_table = D1_table.iloc[D2_indicator]
+    D3_table = D1_table.loc[D2_indicator==1]
     M = D3_table.M.values
     D3_table = D3_table[D3_columns]
     
