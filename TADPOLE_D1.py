@@ -226,9 +226,16 @@ def changeDiagToLongit(filePath, mergeAll, ridInd, ptidInd, visCodeInd, header):
   return mergeAllPlus, headerPlus
 
 
-def appendMRIADNI1(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader):
+def copyListIntoNPCharArray(list, chararray):
+  for i in range(len(list)):
+    chararray[i] = list[i]
+
+  return chararray
+
+def appendMRIADNI1FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader):
   '''
-  
+  Append Freesurfer Longitudinal data
+
   :param filePath: file containing the ADNI1 spreadsheet
   :param mergeAll: np chararray with all the information so far
   :param ridInd: index of the RID column
@@ -347,14 +354,10 @@ def appendMRIADNI1(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader)
   
   return mergeAllPlus, headerPlus
 
-def copyListIntoNPCharArray(list, chararray):
-  for i in range(len(list)):
-    chararray[i] = list[i]
-  
-  return chararray
-
-def appendMRIADNI2(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, filePathADNI1, dictPath, dictAll):
+def appendMRIADNI2FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, filePathADNI1, dictPath, dictAll):
   '''
+  Append Freesurfer Longitudinal data from ADNI2 within the same columns as for ADNI1
+
   :param filePath: file containing the ADNI2 spreadsheet
   :param mergeAll: np chararray with all the information so far
   :param ridInd: index of the RID column
@@ -475,6 +478,222 @@ def appendMRIADNI2(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader,
         '%s_%s' % (rows[r][1], ssNameTag)
   
   return mergeAll, headerPlus, dictAllPlus
+
+def appendMriADNI1FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader):
+  '''
+  Appends MRI Freesurfer Cross-sectional data to the dataset
+
+  :param filePath: file containing the ADNI1 s/s
+  :param mergeAll: np chararray with all the information so far
+  :param ridInd: index of the RID column
+  :param ptidInd: index of the participant ID column
+  :param visCodeInd: index of the visit code column
+  :param mergeHeader: header for the data so far
+  :return:
+  '''
+
+  df = pd.read_csv(filePath)
+  print('df', df)
+  # print(asdas)
+  df['OVERALLQC_NR'] = df['OVERALLQC']
+  df['TEMPQC_NR'] = df['TEMPQC']
+  df['FRONTQC_NR'] = df['FRONTQC']
+  df['PARQC_NR'] = df['PARQC']
+  df['INSULAQC_NR'] = df['INSULAQC']
+  df['OCCQC_NR'] = df['OCCQC']
+  df['CWMQC_NR'] = df['CWMQC']
+  df['VENTQC_NR'] = df['VENTQC']
+
+  mapping = {'Pass' : 0, 'Partial' : 1, 'Fail' : 2}
+  print(df['OVERALLQC_NR'][:50])
+  df.replace({'OVERALLQC_NR': mapping, 'TEMPQC_NR': mapping, 'FRONTQC_NR': mapping,
+    'PARQC_NR': mapping, 'INSULAQC_NR': mapping, 'OCCQC_NR': mapping, 'CWMQC_NR': mapping,
+    'VENTQC_NR': mapping}, inplace=True)
+  print(df['OVERALLQC_NR'][:50])
+  # print(adsa)
+  df['QCSUM_NR'] = df['TEMPQC_NR'] + df['FRONTQC_NR'] + df['PARQC_NR'] + df['INSULAQC_NR'] \
+    + df['OCCQC_NR'] + df['CWMQC_NR'] + df['VENTQC_NR']
+
+  df.sort_values(by=['RID', 'EXAMDATE', 'OVERALLQC_NR', 'QCSUM_NR', 'RUNDATE', 'IMAGEUID'],
+    ascending=[True,True,True,True,False,False], inplace=True)
+
+  print(df.shape)
+  df.drop(['OVERALLQC_NR', 'TEMPQC_NR', 'FRONTQC_NR', 'PARQC_NR',
+    'INSULAQC_NR', 'OCCQC_NR',  'CWMQC_NR', 'VENTQC_NR', 'QCSUM_NR'], axis=1, inplace=True)
+  df.reset_index(drop=True, inplace=True)
+
+  print(df.shape)
+  # print(adsas)
+
+  with open(filePath, 'r') as f:
+
+    reader = csv.reader(f, delimiter = ',', quotechar = '"')
+    rows = [row for row in reader]
+    header = rows[0]
+
+    nrRows, nrCols = df.shape
+
+    # rowsArray = rowsArray[rowsArray[:, 9].argsort()] # sort entries by RUNDATE
+
+    nrColsToSkip = 2
+    nrExtraCols = nrCols - nrColsToSkip # add one extra column for a tag saying 'Freesurfer ROIs'
+
+    nrColsSoFar = mergeAll.shape[1]
+
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus.fill(b' ')
+    mergeAllPlus[:,:nrColsSoFar] = mergeAll
+    # mergeAllPlus[:,nrColsSoFar] = b'Freesurfer ROIs'
+
+    for r in range(nrRows)[::-1]:
+
+      currVisCode = df['VISCODE2'][r]
+      if currVisCode == 'sc':
+        # print(df['VISCODE2'][df['RID'][r] == df['RID']])
+        # print(adsa)
+        if (df['VISCODE2'][df['RID'][r] == df['RID']]).str.contains('bl').sum():
+          pass
+        else:
+          currVisCode = 'bl'
+
+      indexInAdniMerge = np.logical_and(mergeAll[:,ridInd] == str.encode('%d' % df['RID'][r]),
+        mergeAll[:,visCodeInd] == str.encode(currVisCode))
+
+      assert np.sum(indexInAdniMerge) <= 1
+      if np.sum(indexInAdniMerge) > 0:
+        # print(df.iloc[[r]])
+        series = df.iloc[r,nrColsToSkip:]
+        # print(series.shape)
+        # print(mergeAllPlus[indexInAdniMerge,nrColsSoFar:].shape)
+        mergeAllPlus[indexInAdniMerge,nrColsSoFar:] = series
+      else:
+        print('match not found for row %d' % r )
+
+  mergeAllPlus[mergeAllPlus == b'nan'] = b' '
+  ssNameTag = filePath.split('.')[0].split('/')[-1]
+  headerPlus = mergeHeader + ['%s_%s' % (h, ssNameTag) for h in header[nrColsToSkip:]]
+
+  return mergeAllPlus, headerPlus
+
+def appendMriADNI2FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, filePathADNI1, dictPath, dictAll):
+  '''
+  Append Freesurfer Longitudinal data from ADNI2 within the same columns as for ADNI1
+
+  :param filePath: file containing the ADNI2 spreadsheet
+  :param mergeAll: np chararray with all the information so far
+  :param ridInd: index of the RID column
+  :param ptidInd: index of the participant ID column
+  :param visCodeInd: index of the visit code column
+  :param mergeHeader: header for the data so far
+  :return:
+  '''
+  with open(filePath, 'r') as f:
+    reader = csv.reader(f, delimiter = ',', quotechar = '"')
+    rows = [row for row in reader]
+    adni2Header = rows[0]
+    rows = rows[1:]  # ignore first line which is the column titles
+    nrRows = len(rows)
+    nrCols = len(rows[0])
+
+    rowsArray = np.ndarray((nrRows, nrCols + 1), dtype = 'S100')
+    rowsArray[:, -1] = b' '  # add extra column at the end
+    rowsArray[:, :-1] = rows
+    rowsArray = rowsArray[rowsArray[:, 4].argsort()]  # sort entries by the exam date
+
+    # columns in the ADNI2 spreadsheets are permuted compared to ANDI1. find the permutation
+    # permutation should go from ADNI2 header to ADNI1 header
+    adni2HeaderArray = np.ndarray(len(adni2Header), dtype = 'S100')
+    # adni2HeaderArray[:] = [str.encode(x) for x in adni2Header ]
+    adni2HeaderArray = copyListIntoNPCharArray(adni2Header, adni2HeaderArray)
+    # print('adni2HeaderArray', adni2HeaderArray)
+    # print('adni2Header', adni2Header)
+    # print(asdas)
+    permList = -1 * np.ones(len(mergeHeader), int)
+    print([(mergeHeader[i], i) for i in range(len(mergeHeader))])
+    print('adni2HeaderArrayFSX', adni2HeaderArray)
+    print(aadsa)
+    mergeHeaderLims = np.array([])
+    mergeHeaderIdx = range(mergeHeaderLims[0], mergeHeaderLims[1])
+    for h in range(len(mergeHeaderIdx)):
+      idx = np.where(str.encode(mergeHeader[mergeHeaderIdx[h]]) == adni2HeaderArray)[0]
+      # print(idx)
+      if len(idx) == 1:
+        permList[h] = idx[0]
+      elif len(idx) == 0:
+        pass
+        print('no col matched', mergeHeader[h])
+      else:
+        pass
+        print('more than one col matched', mergeHeader[h])
+
+    print('permList', permList)
+    print('mergeHeader[mergeHeaderLims[0]:]', mergeHeader[mergeHeaderLims[0]:])
+    print('headers zipped:', list(zip([adni2HeaderArray[permList[i]] for i in range(len(mergeHeaderIdx))],
+                                      [mergeHeader[i] for i in mergeHeaderIdx])))
+    print(mergeAll[0, mergeHeaderLims[0]:].shape, len(mergeHeaderIdx))
+
+    ridTmp = 23
+    visCodeTmp = b'm48'
+    colTmp = b'RUNDATE'
+
+    print(mergeAll[:4, :])
+    print('np.sum(mergeAll[:,ridInd] == str.encode(ridTmp))',
+          np.sum(mergeAll[:, ridInd] == str.encode('%d' % ridTmp)))
+    print('np.sum(mergeAll[:, visCodeInd] == visCodeTmp)', np.sum(mergeAll[:, visCodeInd] == visCodeTmp))
+    indexTmpEntry = np.logical_and(mergeAll[:, ridInd] == str.encode('%d' % ridTmp),
+                                   mergeAll[:, visCodeInd] == visCodeTmp)
+    print('np.sum(indexTmpEntry)', np.sum(indexTmpEntry))
+    mergeHeaderArray = np.ndarray(len(mergeHeader), dtype = 'S100')
+    mergeHeaderArray = copyListIntoNPCharArray(mergeHeader, mergeHeaderArray)
+
+    print('mergeHeader', mergeHeader)
+    print('mergeHeaderArray', mergeHeaderArray)
+    indexTmpColumn = int(np.where(mergeHeaderArray == colTmp)[0])
+    print('indexTmpEntry', indexTmpEntry)
+    print('indexTmpColumn', indexTmpColumn)
+    colInx = np.array(range((indexTmpColumn - 5), (indexTmpColumn + 5)), int)
+    print('mergeHeaderArray', mergeHeaderArray[colInx])
+    print('mergeAll(indexTmpEntry, indexTmpColumn)', mergeAll[indexTmpEntry, :][:, colInx])
+
+    # print(adsa)
+
+    for r in range(nrRows):
+      currVisCode = rowsArray[r, 3]
+      if currVisCode == b'scmri':
+        currVisCode = b'bl'
+      indexInAdniMerge = np.logical_and(mergeAll[:, ridInd] == rowsArray[r, 1],
+                                        mergeAll[:, visCodeInd] == currVisCode)
+      assert np.sum(indexInAdniMerge) <= 1
+      if np.sum(indexInAdniMerge) > 0:
+        currRow = rowsArray[r, :]
+        mergeAll[indexInAdniMerge, (mergeHeaderLims[0]):] = [currRow[permList[i]] for i in range(len(mergeHeaderIdx))]
+      else:
+        print('match not found for row %d' % r)
+
+  ssNameTag = '%s_%s' % (filePathADNI1.split('.')[0].split('/')[-1], filePath.split('.')[0].split('/')[-1])
+  headerPlus = mergeHeader[:mergeHeaderLims[0]] + ['%s_%s' % (h, ssNameTag) for h in mergeHeader[mergeHeaderLims[0]:]]
+
+  with open(dictPath, 'r') as f:
+    reader = csv.reader(f, delimiter = ',', quotechar = '"')
+    rows = [row for row in reader]
+    # rows = [rows[0]] + rows[3:]
+    header = rows[0]
+    nrRowsDict = len(rows)
+    nrColsDict = len(rows[0])
+
+    nrRowsSoFar = dictAll.shape[0]
+    dictAllPlusRows = nrRowsSoFar + nrRowsDict
+    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype = 'S100')
+    dictAllPlus.fill(b' ')
+    dictAllPlus[:nrRowsSoFar, :] = dictAll
+
+    for r in range(nrRowsDict):
+      # print([str.encode(word) for word in rows[r]])
+      dictAllPlus[nrRowsSoFar + r, :] = [str.encode(word) for word in rows[r]]
+      dictAllPlus[nrRowsSoFar + r, 1] = '%s_%s' % (rows[r][1], ssNameTag)
+
+  return mergeAll, headerPlus, dictAllPlus
+
 
 def appendFdgPet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dictPath, dictAll):
   '''
@@ -1122,7 +1341,7 @@ mriADNI1DictFSL = 'UCSFFSL_DICT_11_01_13.csv'
 mriADNI2FileFSL = 'UCSFFSL51ALL_08_01_16.csv'
 mriADNI2DictFSL = 'UCSFFSL51ALL_DICT_05_04_16.csv'
 
-############ TO DO: Cross-sectional FreeSurfer ############
+############ Cross-sectional FreeSurfer ############
 mriADNI1FileFSX = 'UCSFFSX_11_02_15.csv'
 mriADNI1DictFSX = 'UCSFFSX_DICT_08_01_14.csv'
 mriADNI2FileFSX = 'UCSFFSX51_08_01_16.csv'
@@ -1137,26 +1356,16 @@ if runPart in [0,1]:
   mergeAll, header = changeDiagToLongit(diagFile, mergeAll, ridInd, ptidInd, visCodeInd,
     header) # also modified header DX_bl ->DX_longitudinal
   
-  # uniqueRids = np.unique(mergeAll[:, ridInd])
-  # print('mergeAll[: ridInd]', mergeAll[:, ridInd])
-  # print('uniqueRids', uniqueRids)
-  # print('nr of subjects in D1', uniqueRids.shape)
-  # diags = [b'CN', b'EMCI', b'LMCI', b'AD']
-  # diagInd = 7
-  # for d in range(len(diags)):
-  #   # print('mergeAll[:, diagInd]', mergeAll[:, diagInd])
-  #   # print('mergeAll[:, diagInd] == diags[d]', np.sum(mergeAll[:, diagInd] == diags[d]))
-  #   print('diag %s - %d' % (diags[d],
-  #     np.unique(mergeAll[mergeAll[:, diagInd] == diags[d], ridInd]).shape[0]))
-  # print(adsas)
-  
   # Longitudinal FreeSurfer
-  mergeAll, header = appendMRIADNI1(mriADNI1FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header)
-  mergeAll, header, dictAll = appendMRIADNI2(mriADNI2FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header, mriADNI1FileFSL, mriADNI1DictFSL, dictAll)
+  mergeAll, header = appendMRIADNI1FSL(mriADNI1FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header)
+  mergeAll, header, dictAll = appendMRIADNI2FSL(mriADNI2FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header, mriADNI1FileFSL, mriADNI1DictFSL, dictAll)
+
   # Cross-sectional FreeSurfer
-  print('\n\n ************ Find me and fix me: need a new function that joins UCSFFSX tables to ADNIMERGE ************ \n\n\n')
-  #mergeAll, header = appendMRIADNI1(mriADNI1FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header)
-  #mergeAll, header, dictAll = appendMRIADNI2(mriADNI2FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header, mriADNI1FileFSX, mriADNI1DictFSX, dictAll)
+  mergeAll, header = appendMriADNI1FSX(mriADNI1FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header)
+
+  mergeAll, header, dictAll = appendMriADNI2FSX(mriADNI2FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header,
+    mriADNI1FileFSX, mriADNI1DictFSX, dictAll)
+
   
   fdgPetFile = 'BAIPETNMRC_09_12_16.csv'
   fdgPetDict = 'BAIPETNMRC_DICT_09_12_16.csv'
