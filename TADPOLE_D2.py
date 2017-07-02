@@ -18,6 +18,32 @@ import os
 import numpy as np
 from datetime import datetime
 import pandas as pd
+import argparse
+from argparse import RawTextHelpFormatter
+
+parser = argparse.ArgumentParser(
+  description=r'''
+ A script to generate the D2 dataset for TADPOLE Challenge:
+The Alzheimer's Disease Prediction Of Longitudinal Evolution Challenge
+http://tadpole.grand-challenge.org
+
+Called by TADPOLE_D1.py
+
+ The script requires the following spreadsheets to be in the current folder:
+    REGISTRY.csv
+    ROSTER.csv
+    ARM.csv
+    DXSUM_PDXCONV_ADNIALL.csv
+    ADNIMERGE.csv
+ ''', formatter_class=RawTextHelpFormatter
+)
+
+parser.add_argument('--spreadsheetFolder', dest='spreadsheetFolder', default='.',
+                   help='folder of output spreadsheets')
+
+np.random.seed(1)
+
+args = parser.parse_args()
 
 def generateDXCHANGE(ADNI_DXSUM_table):
     "Generate DXCHANGE for ADNI1 within DXSUM table: As defined on page 46 of ADNI_data_training_slides_part2.pdf"
@@ -135,11 +161,11 @@ if __name__ == '__main__':
     dataLocation = os.getcwd()
     
     #*** Active, passed screening, etc.
-    REGISTRY_file = 'REGISTRY.csv' 
-    ROSTER_file   = 'ROSTER.csv' 
+    REGISTRY_file = '%s/REGISTRY.csv' % args.spreadsheetFolder
+    ROSTER_file   = '%s/ROSTER.csv' % args.spreadsheetFolder
     #*** specifics on EMCI/LMCI/etc
-    ARM_file = 'ARM.csv' 
-    DXSUM_file = 'DXSUM_PDXCONV_ADNIALL.csv'
+    ARM_file = '%s/ARM.csv' % args.spreadsheetFolder
+    DXSUM_file = '%s/DXSUM_PDXCONV_ADNIALL.csv' % args.spreadsheetFolder
     
     #*** ADNI tables
     REGISTRY_table = pd.read_csv(REGISTRY_file)
@@ -166,12 +192,12 @@ if __name__ == '__main__':
     D2_RID = table_ADNI2_active.RID.unique()
     
     #*** TADPOLE D2: historical data for D2_RID
-    D1_file = 'ADNIMERGE.csv' 
+    D1_file = '%s/ADNIMERGE.csv' %  args.spreadsheetFolder
     D1_table = pd.read_csv(D1_file)
     D2_indicator = ismember(D1_table.RID.values,D2_RID)
     D2_indicator_numeric = 1*D2_indicator
     D2_ = D1_table[['RID','VISCODE']]
     D2 = D2_.assign(D2=D2_indicator_numeric)
-    D2_file = 'TADPOLE_D2_column.csv' # D2_file = 'TADPOLE_D2_column_{0}.csv'.format(runDate)
+    D2_file = '%s/TADPOLE_D2_column.csv' % args.spreadsheetFolder # D2_file = 'TADPOLE_D2_column_{0}.csv'.format(runDate)
     D2.to_csv(os.path.join(dataSaveLocation,D2_file),index=False)
     

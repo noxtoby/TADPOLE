@@ -39,9 +39,13 @@ parser = argparse.ArgumentParser(
  ''', formatter_class=RawTextHelpFormatter
 )
 
+parser.add_argument('--spreadsheetFolder', dest='spreadsheetFolder', default='.',
+                   help='folder of output spreadsheets')
+
 CN = 1
 MCI = 2
 AD = 3
+dataType = 'S30'
 
 np.random.seed(1)
 
@@ -73,12 +77,12 @@ def loadADNIMerge(filePath, dictPath):
     ridInd = 0
     ptidInd = 1
     visCodeInd = 2
-    mergeAll = np.ndarray((nrRows, nrCols), dtype='S100')
+    mergeAll = np.ndarray((nrRows, nrCols), dtype=dataType)
     mergeAll[:] = ' '
     # mergeAll.fill('  ')
-    print('mergeAll', mergeAll)
+    # print('mergeAll', mergeAll)
     # print(adas)
-    print('nrRows', nrRows)
+    # print('nrRows', nrRows)
     
     for r in range(nrRows):
       # print([str.encode(word) for word in rows[r]])
@@ -94,7 +98,7 @@ def loadADNIMerge(filePath, dictPath):
     rows = [row for row in reader]
     nrRows = len(rows)
     nrCols = len(rows[0])
-    dictAll = np.ndarray((nrRows, nrCols), dtype='S100')
+    dictAll = np.ndarray((nrRows, nrCols), dtype=dataType)
     dictAll[:] = b' '
     
     for r in range(nrRows):
@@ -124,8 +128,12 @@ def parseDX(dxChange, dxCurr, dxConv, dxConvType, dxRev):
       adni2_diag = 6
     elif dxConv == 2:
       adni2_diag = int(dxRev) + 6
+    elif np.isnan(dxConv):
+      adni2_diag = -1
     else:
+      print(dxChange, dxCurr, dxConv, dxConvType, dxRev)
       return ValueError('wrong values for diagnosis')
+
   
   return adni2_diag
 
@@ -148,7 +156,7 @@ def changeDiagToLongit(filePath, mergeAll, ridInd, ptidInd, visCodeInd, header):
   '''
   
   df = pd.read_csv(filePath)
-  print('df', df)
+  # print('df', df)
   
   nrRows = df.shape[0]
   adni2DiagOrig = np.zeros(nrRows,int)
@@ -161,10 +169,10 @@ def changeDiagToLongit(filePath, mergeAll, ridInd, ptidInd, visCodeInd, header):
     adni2DiagOrig[r] = parsedDiag
   
   df['adni2DiagOrig'] = adni2DiagOrig
-  print('adni2DiagOrig', adni2DiagOrig)
+  # print('adni2DiagOrig', adni2DiagOrig)
   
   nrRowsMerge, nrColsMerge = mergeAll.shape
-  mergeAllPlus = np.ndarray((nrRowsMerge, nrColsMerge+1), dtype='S100')
+  mergeAllPlus = np.ndarray((nrRowsMerge, nrColsMerge+1), dtype=dataType)
   targetPos = 8
   mergeAllPlus[:,:targetPos] = mergeAll[:,:targetPos]
   mergeAllPlus[:, targetPos] = b''
@@ -175,7 +183,7 @@ def changeDiagToLongit(filePath, mergeAll, ridInd, ptidInd, visCodeInd, header):
   sortedVisitsList = ['sc', 'bl', 'm03', 'm06', 'm12', 'm18', 'm24', 'm36', 'm48', 'm60',
     'm72', 'm84', 'm96']
   
-  print('mergeAllPlus[:, targetPos]', mergeAllPlus[:, targetPos])
+  # print('mergeAllPlus[:, targetPos]', mergeAllPlus[:, targetPos])
   for r2 in range(nrRowsMerge):
     ridMaskDX = bin2int(mergeAllPlus[r2,ridInd]) == df['RID']
     currVisitMerge = mergeAllPlus[r2,visCodeInd].decode('utf-8')
@@ -219,8 +227,8 @@ def changeDiagToLongit(filePath, mergeAll, ridInd, ptidInd, visCodeInd, header):
       matchedDiag = df[maskAdni2DiagDX]['adni2DiagOrig'].values[0]
       mergeAllPlus[r2, targetPos] = int2bin(matchedDiag)
   
-  print('mergeAllPlus[:5,:10]', mergeAllPlus[:5,:10])
-  print('headerPlus[:10]', headerPlus[:10])
+  # print('mergeAllPlus[:5,:10]', mergeAllPlus[:5,:10])
+  # print('headerPlus[:10]', headerPlus[:10])
   # print(adsa)
   
   return mergeAllPlus, headerPlus
@@ -252,7 +260,7 @@ def appendMRIADNI1FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
   vc = 'VISCODE2'
   
   df = pd.read_csv(filePath)
-  print('df', df)
+  # print('df', df)
   # print(asdas)
   df['OVERALLQC_NR'] = df['OVERALLQC']
   df['TEMPQC_NR'] = df['TEMPQC']
@@ -282,7 +290,7 @@ def appendMRIADNI1FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
   # print('df[indexTmpInDf]\n', df[indexTmpInDf])
   # print(dsas)
   
-  print(df.shape)
+  # print(df.shape)
   # also remove RID 1066 baseline and m12 (later duplicate, with examdate 2011-12-19).
   # this is because the dates are wrong (the 2011-12-19 is actually an ADNI2 init visit).
   # print(df[np.logical_and(df['RID'] == 1066, df['EXAMDATE'] == '2011-12-19')])
@@ -291,13 +299,13 @@ def appendMRIADNI1FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
   indicesToDrop = np.logical_or(indicesToDrop,
     np.logical_and(df['RID'] == 1066, df[vc] == 'bl'))
   indicesToDrop = np.logical_or(indicesToDrop, df['OVERALLQC'] != 'Pass')
-  print(df.shape)
+  # print(df.shape)
   df = df[np.logical_not(indicesToDrop)]
   df.drop(['OVERALLQC_NR', 'TEMPQC_NR', 'FRONTQC_NR', 'PARQC_NR',
     'INSULAQC_NR', 'OCCQC_NR',  'CWMQC_NR', 'VENTQC_NR', 'QCSUM_NR'], axis=1, inplace=True)
   df.reset_index(drop=True, inplace=True)
   
-  print(df.shape)
+  # print(df.shape)
   # print(adsas)
   
   with open(filePath, 'r') as f:
@@ -309,12 +317,12 @@ def appendMRIADNI1FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
     nrRows, nrCols = df.shape
     
     # rowsArray = rowsArray[rowsArray[:, 9].argsort()] # sort entries by RUNDATE
-    
-    nrExtraCols = nrCols-3 # add one extra column for a tag saying 'Freesurfer ROIs'
+    nrColsToSkip = 3
+    nrExtraCols = nrCols-nrColsToSkip # add one extra column for a tag saying 'Freesurfer ROIs'
     
     nrColsSoFar = mergeAll.shape[1]
     
-    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus.fill(b' ')
     mergeAllPlus[:,:nrColsSoFar] = mergeAll
     # mergeAllPlus[:,nrColsSoFar] = b'Freesurfer ROIs'
@@ -338,7 +346,7 @@ def appendMRIADNI1FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
       assert np.sum(indexInAdniMerge) <= 1
       if np.sum(indexInAdniMerge) > 0:
         # print(df.iloc[[r]])
-        series = df.iloc[r,3:]
+        series = df.iloc[r,nrColsToSkip:]
         # print(series.shape)
         # print(mergeAllPlus[indexInAdniMerge,nrColsSoFar:].shape)
         # print(series[0,3:].shape)
@@ -346,12 +354,10 @@ def appendMRIADNI1FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
       else:
         print('match not found for row %d' % r )
     
-    headerPlus = mergeHeader + header[3:]
+    headerPlus = mergeHeader + header[nrColsToSkip:]
   
   mergeAllPlus[mergeAllPlus == b'nan'] = b' '
-  
-  print()
-  
+
   return mergeAllPlus, headerPlus
 
 def appendMRIADNI2FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, filePathADNI1, dictPath, dictAll):
@@ -374,22 +380,22 @@ def appendMRIADNI2FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
     nrRows = len(rows)
     nrCols = len(rows[0])
     
-    rowsArray = np.ndarray((nrRows, nrCols+1), dtype='S100')
+    rowsArray = np.ndarray((nrRows, nrCols+1), dtype=dataType)
     rowsArray[:,-1] = b' ' # add extra column at the end
     rowsArray[:,:-1] = rows
     rowsArray = rowsArray[rowsArray[:, 4].argsort()] # sort entries by the exam date
     
     # columns in the ADNI2 spreadsheets are permuted compared to ANDI1. find the permutation
     # permutation should go from ADNI2 header to ADNI1 header
-    adni2HeaderArray = np.ndarray(len(adni2Header), dtype='S100')
+    adni2HeaderArray = np.ndarray(len(adni2Header), dtype=dataType)
     # adni2HeaderArray[:] = [str.encode(x) for x in adni2Header ]
     adni2HeaderArray = copyListIntoNPCharArray(adni2Header, adni2HeaderArray)
     # print('adni2HeaderArray', adni2HeaderArray)
     # print('adni2Header', adni2Header)
     # print(asdas)
     permList = -1 * np.ones(len(mergeHeader), int)
-    print([(mergeHeader[i],i) for i in range(len(mergeHeader))])
-    print('adni2HeaderArray', adni2HeaderArray)
+    # print([(mergeHeader[i],i) for i in range(len(mergeHeader))])
+    # print('adni2HeaderArray', adni2HeaderArray)
     mergeHeaderLims = np.array([95,467])
     mergeHeaderIdx = range(mergeHeaderLims[0], mergeHeaderLims[1])
     for h in range(len(mergeHeaderIdx)):
@@ -399,41 +405,41 @@ def appendMRIADNI2FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
         permList[h] = idx[0]
       elif len(idx) == 0:
         pass
-        print('no col matched', mergeHeader[h])
+        print('no col matched', mergeHeader[mergeHeaderIdx[h]])
       else:
         pass
-        print('more than one col matched', mergeHeader[h])
+        print('more than one col matched', mergeHeader[mergeHeaderIdx[h]])
     
-    print('permList', permList)
-    print('mergeHeader[mergeHeaderLims[0]:]', mergeHeader[mergeHeaderLims[0]:])
-    print('headers zipped:', list(zip([adni2HeaderArray[permList[i]] for i in
-      range(len(mergeHeaderIdx))],
-      [mergeHeader[i] for i in mergeHeaderIdx])))
-    print(mergeAll[0,mergeHeaderLims[0]:].shape, len(mergeHeaderIdx))
+    # print('permList', permList)
+    # print('mergeHeader[mergeHeaderLims[0]:]', mergeHeader[mergeHeaderLims[0]:])
+    # print('headers zipped:', list(zip([adni2HeaderArray[permList[i]] for i in
+    #   range(len(mergeHeaderIdx))],
+    #   [mergeHeader[i] for i in mergeHeaderIdx])))
+    # print(mergeAll[0,mergeHeaderLims[0]:].shape, len(mergeHeaderIdx))
     
     ridTmp = 23
     visCodeTmp = b'm48'
     colTmp = b'RUNDATE'
     
-    print(mergeAll[:4,:])
-    print('np.sum(mergeAll[:,ridInd] == str.encode(ridTmp))',
-      np.sum(mergeAll[:,ridInd] == str.encode('%d' % ridTmp)))
-    print('np.sum(mergeAll[:, visCodeInd] == visCodeTmp)', np.sum(mergeAll[:, visCodeInd] == visCodeTmp))
-    indexTmpEntry = np.logical_and(mergeAll[:,ridInd] == str.encode('%d' % ridTmp),
-      mergeAll[:, visCodeInd] == visCodeTmp)
-    print('np.sum(indexTmpEntry)', np.sum(indexTmpEntry))
-    mergeHeaderArray = np.ndarray(len(mergeHeader), dtype='S100')
+    # print(mergeAll[:4,:])
+    # print('np.sum(mergeAll[:,ridInd] == str.encode(ridTmp))',
+    #   np.sum(mergeAll[:,ridInd] == str.encode('%d' % ridTmp)))
+    # print('np.sum(mergeAll[:, visCodeInd] == visCodeTmp)', np.sum(mergeAll[:, visCodeInd] == visCodeTmp))
+    # indexTmpEntry = np.logical_and(mergeAll[:,ridInd] == str.encode('%d' % ridTmp),
+    #   mergeAll[:, visCodeInd] == visCodeTmp)
+    # print('np.sum(indexTmpEntry)', np.sum(indexTmpEntry))
+    mergeHeaderArray = np.ndarray(len(mergeHeader), dtype=dataType)
     mergeHeaderArray = copyListIntoNPCharArray(mergeHeader, mergeHeaderArray)
     
-    print('mergeHeader', mergeHeader)
-    print('mergeHeaderArray', mergeHeaderArray)
+    # print('mergeHeader', mergeHeader)
+    # print('mergeHeaderArray', mergeHeaderArray)
     indexTmpColumn = int(np.where(mergeHeaderArray == colTmp)[0])
-    print('indexTmpEntry', indexTmpEntry)
-    print('indexTmpColumn', indexTmpColumn)
+    # print('indexTmpEntry', indexTmpEntry)
+    # print('indexTmpColumn', indexTmpColumn)
     colInx = np.array(range((indexTmpColumn - 5), (indexTmpColumn + 5)), int)
-    print('mergeHeaderArray', mergeHeaderArray[colInx])
-    print('mergeAll(indexTmpEntry, indexTmpColumn)',
-      mergeAll[indexTmpEntry, :][:,colInx])
+    # print('mergeHeaderArray', mergeHeaderArray[colInx])
+    # print('mergeAll(indexTmpEntry, indexTmpColumn)',
+    #   mergeAll[indexTmpEntry, :][:,colInx])
     
     # print(adsa)
     
@@ -451,11 +457,14 @@ def appendMRIADNI2FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
       else:
         print('match not found for row %d' % r )
 
-  
-  ssNameTag = '%s_%s' % (filePathADNI1.split('.')[0].split('/')[-1],
-  filePath.split('.')[0].split('/')[-1])
-  headerPlus = mergeHeader[:mergeHeaderLims[0]] + ['%s_%s' % (h, ssNameTag) for h in mergeHeader[mergeHeaderLims[0]:]]
 
+  
+  ssNameTag = '%s_%s' % (filePathADNI1[:-4].split('/')[-1], filePath[:-4].split('/')[-1])
+  # print('ssNameTag', ssNameTag)
+  # print('mergeHeader', mergeHeader)
+  headerPlus = mergeHeader[:mergeHeaderLims[0]] + ['%s_%s' % (h, ssNameTag) for h in mergeHeader[mergeHeaderLims[0]:]]
+  # print('headerPlus', headerPlus)
+  # print(aas)
   
   with open(dictPath, 'r') as f:
     reader = csv.reader(f, delimiter = ',', quotechar = '"')
@@ -467,7 +476,7 @@ def appendMRIADNI2FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
     
     nrRowsSoFar = dictAll.shape[0]
     dictAllPlusRows = nrRowsSoFar + nrRowsDict
-    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype='S100')
+    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype=dataType)
     dictAllPlus.fill(b' ')
     dictAllPlus[:nrRowsSoFar, :] = dictAll
     
@@ -476,7 +485,11 @@ def appendMRIADNI2FSL(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
       dictAllPlus[nrRowsSoFar+r,:] = [str.encode(word) for word in rows[r]]
       dictAllPlus[nrRowsSoFar + r, 1] = \
         '%s_%s' % (rows[r][1], ssNameTag)
-  
+
+  # print('headerPlus', headerPlus)
+  # print('mergeAll[:2,:]', mergeAll[:2,:])
+  # print(asadsa)
+
   return mergeAll, headerPlus, dictAllPlus
 
 def appendMriADNI1FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader):
@@ -493,7 +506,7 @@ def appendMriADNI1FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
   '''
 
   df = pd.read_csv(filePath)
-  print('df', df)
+  # print('df', df)
   # print(asdas)
   df['OVERALLQC_NR'] = df['OVERALLQC']
   df['TEMPQC_NR'] = df['TEMPQC']
@@ -505,11 +518,11 @@ def appendMriADNI1FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
   df['VENTQC_NR'] = df['VENTQC']
 
   mapping = {'Pass' : 0, 'Partial' : 1, 'Fail' : 2}
-  print(df['OVERALLQC_NR'][:50])
+  # print(df['OVERALLQC_NR'][:50])
   df.replace({'OVERALLQC_NR': mapping, 'TEMPQC_NR': mapping, 'FRONTQC_NR': mapping,
     'PARQC_NR': mapping, 'INSULAQC_NR': mapping, 'OCCQC_NR': mapping, 'CWMQC_NR': mapping,
     'VENTQC_NR': mapping}, inplace=True)
-  print(df['OVERALLQC_NR'][:50])
+  # print(df['OVERALLQC_NR'][:50])
   # print(adsa)
   df['QCSUM_NR'] = df['TEMPQC_NR'] + df['FRONTQC_NR'] + df['PARQC_NR'] + df['INSULAQC_NR'] \
     + df['OCCQC_NR'] + df['CWMQC_NR'] + df['VENTQC_NR']
@@ -517,12 +530,12 @@ def appendMriADNI1FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
   df.sort_values(by=['RID', 'EXAMDATE', 'OVERALLQC_NR', 'QCSUM_NR', 'RUNDATE', 'IMAGEUID'],
     ascending=[True,True,True,True,False,False], inplace=True)
 
-  print(df.shape)
+  # print(df.shape)
   df.drop(['OVERALLQC_NR', 'TEMPQC_NR', 'FRONTQC_NR', 'PARQC_NR',
     'INSULAQC_NR', 'OCCQC_NR',  'CWMQC_NR', 'VENTQC_NR', 'QCSUM_NR'], axis=1, inplace=True)
   df.reset_index(drop=True, inplace=True)
 
-  print(df.shape)
+  # print(df.shape)
   # print(adsas)
 
   with open(filePath, 'r') as f:
@@ -540,22 +553,29 @@ def appendMriADNI1FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
 
     nrColsSoFar = mergeAll.shape[1]
 
-    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus.fill(b' ')
     mergeAllPlus[:,:nrColsSoFar] = mergeAll
     # mergeAllPlus[:,nrColsSoFar] = b'Freesurfer ROIs'
 
     for r in range(nrRows)[::-1]:
 
-      currVisCode = df['VISCODE2'][r]
+      currVisCode = df['VISCODE'][r]
+      # print(type(currVisCode))
       if currVisCode == 'sc':
-        # print(df['VISCODE2'][df['RID'][r] == df['RID']])
+        # print(df['VISCODE'][df['RID'][r] == df['RID']])
         # print(adsa)
-        if (df['VISCODE2'][df['RID'][r] == df['RID']]).str.contains('bl').sum():
+        if (df['VISCODE'][df['RID'][r] == df['RID']]).str.contains('bl').sum():
           pass
         else:
           currVisCode = 'bl'
+      elif isinstance(currVisCode, float) and np.isnan(currVisCode):
+        continue
 
+      # print()
+      # print(str.encode('%d' % df['RID'][r]))
+      # print('currVisCode', currVisCode)
+      # print(str.encode(currVisCode))
       indexInAdniMerge = np.logical_and(mergeAll[:,ridInd] == str.encode('%d' % df['RID'][r]),
         mergeAll[:,visCodeInd] == str.encode(currVisCode))
 
@@ -570,8 +590,7 @@ def appendMriADNI1FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
         print('match not found for row %d' % r )
 
   mergeAllPlus[mergeAllPlus == b'nan'] = b' '
-  ssNameTag = filePath.split('.')[0].split('/')[-1]
-  headerPlus = mergeHeader + ['%s_%s' % (h, ssNameTag) for h in header[nrColsToSkip:]]
+  headerPlus = mergeHeader + header[nrColsToSkip:]
 
   return mergeAllPlus, headerPlus
 
@@ -595,24 +614,24 @@ def appendMriADNI2FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
     nrRows = len(rows)
     nrCols = len(rows[0])
 
-    rowsArray = np.ndarray((nrRows, nrCols + 1), dtype = 'S100')
+    rowsArray = np.ndarray((nrRows, nrCols + 1), dtype = dataType)
     rowsArray[:, -1] = b' '  # add extra column at the end
     rowsArray[:, :-1] = rows
     rowsArray = rowsArray[rowsArray[:, 4].argsort()]  # sort entries by the exam date
 
     # columns in the ADNI2 spreadsheets are permuted compared to ANDI1. find the permutation
     # permutation should go from ADNI2 header to ADNI1 header
-    adni2HeaderArray = np.ndarray(len(adni2Header), dtype = 'S100')
+    adni2HeaderArray = np.ndarray(len(adni2Header), dtype = dataType)
     # adni2HeaderArray[:] = [str.encode(x) for x in adni2Header ]
     adni2HeaderArray = copyListIntoNPCharArray(adni2Header, adni2HeaderArray)
     # print('adni2HeaderArray', adni2HeaderArray)
     # print('adni2Header', adni2Header)
     # print(asdas)
     permList = -1 * np.ones(len(mergeHeader), int)
-    print([(mergeHeader[i], i) for i in range(len(mergeHeader))])
-    print('adni2HeaderArrayFSX', adni2HeaderArray)
-    print(aadsa)
-    mergeHeaderLims = np.array([])
+    # print([(mergeHeader[i], i) for i in range(len(mergeHeader))])
+    # print('adni2HeaderArrayFSX', adni2HeaderArray)
+    # print(aadsa)
+    mergeHeaderLims = np.array([467, 831])
     mergeHeaderIdx = range(mergeHeaderLims[0], mergeHeaderLims[1])
     for h in range(len(mergeHeaderIdx)):
       idx = np.where(str.encode(mergeHeader[mergeHeaderIdx[h]]) == adni2HeaderArray)[0]
@@ -621,39 +640,42 @@ def appendMriADNI2FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
         permList[h] = idx[0]
       elif len(idx) == 0:
         pass
-        print('no col matched', mergeHeader[h])
+        print('no col matched', mergeHeader[mergeHeaderIdx[h]])
       else:
         pass
-        print('more than one col matched', mergeHeader[h])
+        print('more than one col matched', mergeHeader[mergeHeaderIdx[h]])
 
     print('permList', permList)
     print('mergeHeader[mergeHeaderLims[0]:]', mergeHeader[mergeHeaderLims[0]:])
     print('headers zipped:', list(zip([adni2HeaderArray[permList[i]] for i in range(len(mergeHeaderIdx))],
                                       [mergeHeader[i] for i in mergeHeaderIdx])))
-    print(mergeAll[0, mergeHeaderLims[0]:].shape, len(mergeHeaderIdx))
+    # print(asdsa)
 
-    ridTmp = 23
-    visCodeTmp = b'm48'
-    colTmp = b'RUNDATE'
+    # print(mergeAll[0, mergeHeaderLims[0]:].shape, len(mergeHeaderIdx))
 
-    print(mergeAll[:4, :])
-    print('np.sum(mergeAll[:,ridInd] == str.encode(ridTmp))',
-          np.sum(mergeAll[:, ridInd] == str.encode('%d' % ridTmp)))
-    print('np.sum(mergeAll[:, visCodeInd] == visCodeTmp)', np.sum(mergeAll[:, visCodeInd] == visCodeTmp))
-    indexTmpEntry = np.logical_and(mergeAll[:, ridInd] == str.encode('%d' % ridTmp),
-                                   mergeAll[:, visCodeInd] == visCodeTmp)
-    print('np.sum(indexTmpEntry)', np.sum(indexTmpEntry))
-    mergeHeaderArray = np.ndarray(len(mergeHeader), dtype = 'S100')
-    mergeHeaderArray = copyListIntoNPCharArray(mergeHeader, mergeHeaderArray)
-
-    print('mergeHeader', mergeHeader)
-    print('mergeHeaderArray', mergeHeaderArray)
-    indexTmpColumn = int(np.where(mergeHeaderArray == colTmp)[0])
-    print('indexTmpEntry', indexTmpEntry)
-    print('indexTmpColumn', indexTmpColumn)
-    colInx = np.array(range((indexTmpColumn - 5), (indexTmpColumn + 5)), int)
-    print('mergeHeaderArray', mergeHeaderArray[colInx])
-    print('mergeAll(indexTmpEntry, indexTmpColumn)', mergeAll[indexTmpEntry, :][:, colInx])
+    #
+    # ridTmp = 23
+    # visCodeTmp = b'm48'
+    # colTmp = b'RUNDATE'
+    #
+    # print(mergeAll[:4, :])
+    # print('np.sum(mergeAll[:,ridInd] == str.encode(ridTmp))',
+    #       np.sum(mergeAll[:, ridInd] == str.encode('%d' % ridTmp)))
+    # print('np.sum(mergeAll[:, visCodeInd] == visCodeTmp)', np.sum(mergeAll[:, visCodeInd] == visCodeTmp))
+    # indexTmpEntry = np.logical_and(mergeAll[:, ridInd] == str.encode('%d' % ridTmp),
+    #                                mergeAll[:, visCodeInd] == visCodeTmp)
+    # print('np.sum(indexTmpEntry)', np.sum(indexTmpEntry))
+    # mergeHeaderArray = np.ndarray(len(mergeHeader), dtype = dataType)
+    # mergeHeaderArray = copyListIntoNPCharArray(mergeHeader, mergeHeaderArray)
+    #
+    # print('mergeHeader', mergeHeader)
+    # print('mergeHeaderArray', mergeHeaderArray)
+    # indexTmpColumn = int(np.where(mergeHeaderArray == colTmp)[0])
+    # print('indexTmpEntry', indexTmpEntry)
+    # print('indexTmpColumn', indexTmpColumn)
+    # colInx = np.array(range((indexTmpColumn - 5), (indexTmpColumn + 5)), int)
+    # print('mergeHeaderArray', mergeHeaderArray[colInx])
+    # print('mergeAll(indexTmpEntry, indexTmpColumn)', mergeAll[indexTmpEntry, :][:, colInx])
 
     # print(adsa)
 
@@ -670,8 +692,11 @@ def appendMriADNI2FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
       else:
         print('match not found for row %d' % r)
 
-  ssNameTag = '%s_%s' % (filePathADNI1.split('.')[0].split('/')[-1], filePath.split('.')[0].split('/')[-1])
+  ssNameTag = '%s_%s' % (filePathADNI1[:-4].split('/')[-1], filePath[:-4].split('/')[-1])
   headerPlus = mergeHeader[:mergeHeaderLims[0]] + ['%s_%s' % (h, ssNameTag) for h in mergeHeader[mergeHeaderLims[0]:]]
+
+  # print('\'' + '\',\''.join(['%s' % h for h in mergeHeader[mergeHeaderLims[0]:]]) + '\'')
+  # print(asdas)
 
   with open(dictPath, 'r') as f:
     reader = csv.reader(f, delimiter = ',', quotechar = '"')
@@ -683,7 +708,7 @@ def appendMriADNI2FSX(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHead
 
     nrRowsSoFar = dictAll.shape[0]
     dictAllPlusRows = nrRowsSoFar + nrRowsDict
-    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype = 'S100')
+    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype = dataType)
     dictAllPlus.fill(b' ')
     dictAllPlus[:nrRowsSoFar, :] = dictAll
 
@@ -713,7 +738,7 @@ def appendFdgPet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, d
     nrRows = len(rows)
     nrCols = len(rows[0])
     
-    rowsArray = np.ndarray((nrRows, nrCols), dtype='S100')
+    rowsArray = np.ndarray((nrRows, nrCols), dtype=dataType)
     rowsArray[:,:] = rows
     rowsArray = rowsArray[rowsArray[:, 4].argsort()] # sort entries by the exam date
     
@@ -723,7 +748,7 @@ def appendFdgPet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, d
     
     nrColsSoFar = mergeAll.shape[1]
     
-    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus[:,:] = b' '
     mergeAllPlus[:,:nrColsSoFar] = mergeAll
     # mergeAllPlus[:,nrColsSoFar] = b'BAI_FDG_PET_NMRC'
@@ -743,7 +768,7 @@ def appendFdgPet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, d
       else:
         print('match not found for row %d' % r )
   
-  ssNameTag = filePath.split('.')[0].split('/')[-1]
+  ssNameTag = filePath[:-4].split('/')[-1]
   headerPlus = mergeHeader + ['%s_%s' % (h, ssNameTag) for h in header[nrColsToSkip:]]
   
   with open(dictPath, 'r') as f:
@@ -757,7 +782,7 @@ def appendFdgPet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, d
     
     nrRowsSoFar = dictAll.shape[0]
     dictAllPlusRows = nrRowsSoFar + nrRowsDict
-    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype='S100')
+    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype=dataType)
     dictAllPlus[:, :] = b' '
     dictAllPlus[:nrRowsSoFar, :] = dictAll
     
@@ -788,7 +813,7 @@ def appendAv45Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, 
     nrRows = len(rows)
     nrCols = len(rows[0])
     
-    rowsArray = np.ndarray((nrRows, nrCols), dtype='S100')
+    rowsArray = np.ndarray((nrRows, nrCols), dtype=dataType)
     rowsArray[:,:] = rows
     rowsArray = rowsArray[rowsArray[:, 4].argsort()] # sort entries by the exam date
     
@@ -798,7 +823,7 @@ def appendAv45Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, 
     
     nrColsSoFar = mergeAll.shape[1]
     
-    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus[:,:] = b' '
     mergeAllPlus[:,:nrColsSoFar] = mergeAll
     # mergeAllPlus[:,nrColsSoFar] = str.encode(currSpreadsheetTag)
@@ -818,7 +843,7 @@ def appendAv45Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, 
       else:
         print('match not found for row %d' % r )
   
-  ssNameTag = filePath.split('.')[0].split('/')[-1]
+  ssNameTag = filePath[:-4].split('/')[-1]
   headerPlus = mergeHeader + ['%s_%s' % (h, ssNameTag) for h in header[nrColsToSkip:]]
   
   with open(dictPath, 'r') as f:
@@ -831,7 +856,7 @@ def appendAv45Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, 
     
     nrRowsSoFar = dictAll.shape[0]
     dictAllPlusRows = nrRowsSoFar + nrRowsDict
-    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype='S100')
+    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype=dataType)
     dictAllPlus[:, :] = b' '
     dictAllPlus[:nrRowsSoFar, :] = dictAll
     
@@ -864,7 +889,7 @@ def appendAv1451Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader
     nrRows = len(rows)
     nrCols = len(rows[0])
     
-    rowsArray = np.ndarray((nrRows, nrCols), dtype='S100')
+    rowsArray = np.ndarray((nrRows, nrCols), dtype=dataType)
     rowsArray[:,:] = rows
     rowsArray = rowsArray[rowsArray[:, 4].argsort()] # sort entries by the exam date
     
@@ -874,7 +899,7 @@ def appendAv1451Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader
     
     nrColsSoFar = mergeAll.shape[1]
     
-    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus[:,:] = b' '
     mergeAllPlus[:,:nrColsSoFar] = mergeAll
     # mergeAllPlus[:,nrColsSoFar] = str.encode(currSpreadsheetTag)
@@ -893,7 +918,7 @@ def appendAv1451Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader
       else:
         print('match not found for row %d' % r )
   
-  ssNameTag = filePath.split('.')[0].split('/')[-1]
+  ssNameTag = filePath[:-4].split('/')[-1]
   headerPlus = mergeHeader + ['%s_%s' % (h, ssNameTag) for h in header[nrColsToSkip:]]
     # print(mergeAll[:4,:])
     # print('rid 3 ', mergeAllPlus[mergeAllPlus[:,ridInd] == b'3',:])
@@ -910,7 +935,7 @@ def appendAv1451Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader
     
     nrRowsSoFar = dictAll.shape[0]
     dictAllPlusRows = nrRowsSoFar + nrRowsDict
-    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype='S100')
+    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype=dataType)
     dictAllPlus[:, :] = b' '
     dictAllPlus[:nrRowsSoFar, :] = dictAll
     
@@ -943,7 +968,7 @@ def appendDTI(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
     nrRows = len(rows)
     nrCols = len(rows[0])
     
-    rowsArray = np.ndarray((nrRows, nrCols), dtype='S100')
+    rowsArray = np.ndarray((nrRows, nrCols), dtype=dataType)
     rowsArray[:,:] = rows
     rowsArray = rowsArray[rowsArray[:, 11].argsort()] # sort entries by the exam date
     # print('rowsArray[:,:5]', rowsArray[:,:5])
@@ -955,7 +980,7 @@ def appendDTI(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
     
     nrColsSoFar = mergeAll.shape[1]
     
-    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus[:,:] = b' '
     mergeAllPlus[:,:nrColsSoFar] = mergeAll
     mergeAllPlus[:,nrColsSoFar] = str.encode(currSpreadsheetTag)
@@ -973,7 +998,7 @@ def appendDTI(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
       else:
         print('match not found for row %d' % r )
   
-  ssNameTag = filePath.split('.')[0].split('/')[-1]
+  ssNameTag = filePath[:-4].split('/')[-1]
   headerPlus = mergeHeader + ['%s_%s' % (h, ssNameTag) for h in header[nrColsToSkip:]]
   
   ridTmp = b'4354'
@@ -991,7 +1016,7 @@ def appendDTI(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
     
     nrRowsSoFar = dictAll.shape[0]
     dictAllPlusRows = nrRowsSoFar + nrRowsDict
-    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype='S100')
+    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype=dataType)
     dictAllPlus[:, :] = b' '
     dictAllPlus[:nrRowsSoFar, :] = dictAll
     
@@ -1031,7 +1056,7 @@ def appendCSF(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
     
     nrColsSoFar = mergeAll.shape[1]
     
-    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus[:,:] = b' '
     mergeAllPlus[:,:nrColsSoFar] = mergeAll
     # mergeAllPlus[:,nrColsSoFar] = str.encode(currSpreadsheetTag)
@@ -1057,7 +1082,7 @@ def appendCSF(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
       else:
         print('match not found for row %d' % r )
   
-  ssNameTag = filePath.split('.')[0].split('/')[-1]
+  ssNameTag = filePath[:-4].split('/')[-1]
   headerPlus = mergeHeader + ['%s_%s' % (h, ssNameTag) for h in header[nrColsToSkip:]]
   
   with open(dictPath, 'r') as f:
@@ -1070,7 +1095,7 @@ def appendCSF(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
     
     nrRowsSoFar = dictAll.shape[0]
     dictAllPlusRows = nrRowsSoFar + nrRowsDict
-    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype='S100')
+    dictAllPlus = np.ndarray((dictAllPlusRows, nrColsDict), dtype=dataType)
     dictAllPlus[:, :] = b' '
     dictAllPlus[:nrRowsSoFar, :] = dictAll
     
@@ -1123,84 +1148,90 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
     nrCols = len(rows[0])
     assert nrRows == mergeAll.shape[0]
     
-    rowsArray = np.ndarray((nrRows, nrCols), dtype='S100')
+    rowsArray = np.ndarray((nrRows, nrCols), dtype=dataType)
     rowsArray[:,:] = rows
     
     nrExtraCols = 5
     
     nrColsSoFar = mergeAll.shape[1]
     
-    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype='S100')
+    mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus[:,:] = b' '
     mergeAllPlus[:,:4] = mergeAll[:,:4] # place D1 and D2 in columns 4 and 5
     mergeAllPlus[:,(4+nrExtraCols):] = mergeAll[:,4:]
-    headerPlus = mergeHeader[:4] + ['D1', 'D2', 'LB1', 'LB2', 'LB4'] + mergeHeader[4:] #headerPlus = mergeHeader[:4] + ['D1', 'D2', 'D1_1', 'D1_2', 'D1_4'] + mergeHeader[4:]
-
-
+    headerPlus = mergeHeader[:4] + ['D1', 'D2', 'LB1', 'LB2', 'LB4'] + mergeHeader[4:] #headerPlus = mergeHeader[:4] + ['D1', 'D2', 'LB1', 'D1_2', 'D1_4'] + mergeHeader[4:]
     
-    # D1_1 - prelim training set
-    # D1_2 - prelim prediction set
-    # D1_4 - prelim test set
+    # LB1 - prelim training set
+    # LB2 - prelim prediction set
+    # DLB4 - prelim test set
     
-    #  D1_2
-      # contains 200 CN, 200 MCI subjects who have at least one extra visits (excluding last timepoint)
-      # only timepoints up to an AD diagnosis, and excluding the last timepoint
-    # D1_4
-      # contains same subjects as D1_2, just the last timepoint (this timepoint can be AD)
-    # D1_1 contains the remaining subjects
+    #  LB2
+      # contains 200 CN, 200 MCI subjects from ADNI1 who have at least one visit in ADNI GO/2
+      # these subjects must be CN or MCI at last timepoint in ADNI1
+    # LB4
+      # contains same subjects as D1_2, just the next timepoint (from ADNI GO/2)
+    # LB1 contains all the remaining subjects
     
     unqRids = np.unique(mergeAll[:,ridInd])
     nrSubjLong = unqRids.shape[0]
-    atLeastThreeTimeptsMask = np.zeros(nrSubjLong, bool)
-    ctlMciMask = np.zeros(nrSubjLong, bool) # subjects with at least one visit diagnosed as CN or MCI
-    diagPenultimLong = -1 * np.ones(nrSubjLong, int) # diagnosis at penultimate visit: 1-CN 2-MCI 3-AD
+    atLeastTwoTimeptsInAdni1Mask = np.zeros(nrSubjLong, bool)
+    atLeastOneTimeptInAdniGo2Mask = np.zeros(nrSubjLong, bool)
+    lastDiag = np.zeros(nrSubjLong, int) # subjects with at least one visit diagnosed as CN or MCI
     ctlMciDxchange = [b'1', b'2', b'4', b'7', b'8', b'9']
     ctlDxchange = [b'1', b'7', b'9']
     mciDxchange = [b'2', b'4', b'8']
     adDxChange = [b'3', b'5', b'6']
+    adniSetInd = 4 # column COLPROT
+    adniGOor2Mask = np.logical_or(mergeAll[:, adniSetInd] == b'ADNIGO', mergeAll[:, adniSetInd] == b'ADNI2')
+
     for s in range(unqRids.shape[0]):
-      maskCurrSubj = mergeAll[:,ridInd] == unqRids[s]
-      if np.sum(maskCurrSubj) >= 3:
-        atLeastThreeTimeptsMask[s] = True
+      maskCurrSubjADNI1 = np.logical_and(mergeAll[:,ridInd] == unqRids[s], mergeAll[:, adniSetInd] == b'ADNI1')
+      if np.sum(maskCurrSubjADNI1) >= 2:
+        atLeastTwoTimeptsInAdni1Mask[s] = True
+      else:
+        continue
       
-      dxchangeCurrSubj = mergeAll[maskCurrSubj, 8]
-      # make sure subject has at least one timepoint with CN or MCI diagnosis.
-      if np.sum(np.in1d(dxchangeCurrSubj, ctlMciDxchange)) >= 1:
-        ctlMciMask = True
-      
-      visitsOrder = np.argsort(mergeAll[maskCurrSubj, 6]) # find order from EXAMDATE
-      if dxchangeCurrSubj.shape[0] >= 2:
-        # print('------------')
-        # print('dxchangeCurrSubj[visitsOrder]', dxchangeCurrSubj[visitsOrder])
-        # print('dxchangeCurrSubj[visitsOrder][-2]', dxchangeCurrSubj[visitsOrder][-2])
-        # print('decodeIfBinary(dxchangeCurrSubj[visitsOrder][-2])',
-        #   decodeIfBinary(dxchangeCurrSubj[visitsOrder][-2]))
-        # print('convDxchange(decodeIfBinary(dxchangeCurrSubj[visitsOrder][-2]))',
-        #   convDxchange(decodeIfBinary(dxchangeCurrSubj[visitsOrder][-2])))
-        
-        # print('dxchangeCurrSubj[visitsOrder]', dxchangeCurrSubj[visitsOrder])
-        diagPenultimLong[s] = convDxchange(decodeIfBinary(dxchangeCurrSubj[visitsOrder][-2])) # take penultimate diagnosis
-        if diagPenultimLong[s] == AD or diagPenultimLong[s] == -1:
-          # if penultimate diagnosis was AD check earlier visits
-          if np.sum(np.in1d([ convDxchange(decodeIfBinary(d)) for d in dxchangeCurrSubj], [CN])) > 0:
-            # if there was a previous CN visit
-            print('found CN visit')
-            diagPenultimLong[s] = CN
-          if np.sum(np.in1d([ convDxchange(decodeIfBinary(d)) for d in dxchangeCurrSubj], [MCI])) > 0:
-            # if there was a previous CN visit
-            diagPenultimLong[s] = MCI
-          print('found MCI visit')
+      dxchangeCurrSubjADNI1 = mergeAll[maskCurrSubjADNI1, 8]
+      visitsOrder = np.argsort(mergeAll[maskCurrSubjADNI1, 6])  # find order from EXAMDATE
+      dxchangeCurrSubjOrdADNI1 = dxchangeCurrSubjADNI1[visitsOrder]
+      dxchangeCurrSubjOrdFiltADNI1  = dxchangeCurrSubjOrdADNI1[dxchangeCurrSubjOrdADNI1 != b'']
+      # print(dxchangeCurrSubjOrdFilt, dxchangeCurrSubjOrd)
+      # print(adsa)
+      # make sure subject has last timepoint with CN or MCI diagnosis.
+      if np.in1d(dxchangeCurrSubjOrdFiltADNI1[-1], ctlDxchange):
+        lastDiag[s] = CN
+      elif np.in1d(dxchangeCurrSubjOrdFiltADNI1[-1], mciDxchange):
+        lastDiag[s] = MCI
+      elif np.in1d(dxchangeCurrSubjOrdFiltADNI1[-1], adDxChange):
+        lastDiag[s] = AD
+
+      maskCurrSubjADNIGo2 = np.logical_and(mergeAll[:,ridInd] == unqRids[s], adniGOor2Mask)
+      if np.sum(maskCurrSubjADNIGo2) >= 1:
+        atLeastOneTimeptInAdniGo2Mask[s] = True
     
     # now take the potential RIDs and sample 200 CN and 100 MCI
-    filterMask = np.logical_and(atLeastThreeTimeptsMask, ctlMciMask)
-    potentialRIDsD1_2 = unqRids[filterMask]
-    diagPenPotLong = diagPenultimLong[filterMask]
-    nrPotRIDs = potentialRIDsD1_2.shape[0]
-    potRIDsCN = potentialRIDsD1_2[diagPenPotLong == CN]
-    potRIDsMCI = potentialRIDsD1_2[diagPenPotLong == MCI]
-    
-    nrCN = 200
-    nrMCI = 200
+    lastDiagCnMCI = np.logical_or(lastDiag == CN, lastDiag == MCI)
+    print('atLeastTwoTimeptsInAdni1Mask', np.sum(atLeastTwoTimeptsInAdni1Mask))
+    print('lastDiagCnMCI', np.sum(lastDiagCnMCI))
+    print('lastDiag == AD', np.sum(lastDiag == AD))
+    print('rids for subj without DIAG:', mergeAll[lastDiag == 0, ridInd])
+    print('atLeastOneTimeptInAdniGo2Mask', np.sum(atLeastOneTimeptInAdniGo2Mask))
+    filterMask = np.logical_and(atLeastTwoTimeptsInAdni1Mask, lastDiagCnMCI)
+    print('atLeastTwoTimeptsInAdni1Mask, lastDiagCnMCI', np.sum(filterMask))
+    filterMask = np.logical_and(filterMask, atLeastOneTimeptInAdniGo2Mask)
+    print('filterMask, atLeastOneTimeptInAdniGo2Mask', np.sum(filterMask))
+    potentialRIDsLB2 = unqRids[filterMask]
+    lastDiag = lastDiag[filterMask]
+    nrPotRIDs = potentialRIDsLB2.shape[0]
+    potRIDsCN = potentialRIDsLB2[lastDiag == CN]
+    potRIDsMCI = potentialRIDsLB2[lastDiag == MCI]
+
+    print('potRIDsCN.shape', potRIDsCN.shape)
+    print('potRIDsMCI.shape', potRIDsMCI.shape)
+    # print(adsa)
+
+    nrCN = int(potRIDsCN.shape[0]/1.5)
+    nrMCI = int(potRIDsMCI.shape[0]/1.5)
     selectedRIDsCN = np.random.choice(potRIDsCN, nrCN)
     selectedRIDsMCI = np.random.choice(potRIDsMCI, nrMCI)
     selectedRIDs = np.concatenate((selectedRIDsCN, selectedRIDsMCI), axis=0)
@@ -1212,52 +1243,25 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
     print('selectedRIDs.shape', selectedRIDs.shape)
     # print(adas)
     
-    D1_2 = np.zeros(mergeAllPlus.shape[0], int)
-    D1_4 = np.zeros(mergeAllPlus.shape[0], int)
+    LB2 = np.zeros(mergeAllPlus.shape[0], int)
+    LB4 = np.zeros(mergeAllPlus.shape[0], int)
     
     for s in range(nrSelRIDs):
-      maskCurrSubj = mergeAll[:, ridInd] == selectedRIDs[s]
-      dxchangeCurrSubj = mergeAll[maskCurrSubj, 8]
-      visitsCurrSubj = mergeAll[maskCurrSubj, visCodeInd]
-      visitsOrder = np.argsort(mergeAll[maskCurrSubj, 6])  # find order from EXAMDATE
-      diagConvOrdered = np.array([convDxchange(decodeIfBinary(d)) for d in dxchangeCurrSubj[visitsOrder]])
-      diagNotADMask = diagConvOrdered != AD
-      
-      if np.sum(diagNotADMask) == diagConvOrdered.shape[0]:
-        # there was no visit with AD diagnosis, so simply just take
-        # the last visit for D1_4 and the rest for D1_2
-        lastVisitMask = np.logical_and(mergeAll[:, ridInd] == selectedRIDs[s],
-          visitsCurrSubj[visitsOrder][-1] == mergeAll[:, visCodeInd])
-        D1_4[lastVisitMask] = 1
-        otherVisitsMask = np.logical_and(mergeAll[:, ridInd] == selectedRIDs[s],
-          np.in1d(mergeAll[:, visCodeInd], visitsCurrSubj[visitsOrder][:-1]))
-        D1_2[otherVisitsMask] = 1
-      else:
-        # there was at least one visit with AD diagnosis, so simply assign D1_2
-        # all visits up to the AD visit, and then D1_4 will be that AD visit.
-        visitsCurrSubjOrdered = visitsCurrSubj[visitsOrder]
-        # find fist zero entry in diagNotADMask
-        firstAdVisitInd = np.where(diagConvOrdered == AD)[0][0]
-        if firstAdVisitInd > 0:
-          visitsD1_2 = visitsCurrSubjOrdered[:firstAdVisitInd]
-          visitD1_4 = visitsCurrSubjOrdered[firstAdVisitInd]
-          
-          lastVisitMask = np.logical_and(mergeAll[:, ridInd] == selectedRIDs[s],
-            visitD1_4 == mergeAll[:, visCodeInd])
-          D1_4[lastVisitMask] = 1
-          otherVisitsMask = np.logical_and(mergeAll[:, ridInd] == selectedRIDs[s],
-            np.in1d(mergeAll[:, visCodeInd], visitsD1_2) )
-          D1_2[otherVisitsMask] = 1
-          
-          print('dxchange lastVisit', mergeAll[lastVisitMask, 8])
-          print('dxchange otherVisitsMask', mergeAll[otherVisitsMask, 8])
-          # print(adas)
+      # for the current subject s, set all the visits in ADNI1 to be in LB2
+      maskCurrSubjADNI1 = np.logical_and(mergeAll[:, ridInd] == selectedRIDs[s], mergeAll[:, adniSetInd] == b'ADNI1')
+      LB2[maskCurrSubjADNI1] = 1
 
+      # for the current subject s, set all the visits in ADNIGO/2 to be in LB4
+      maskCurrSubjADNIGO2 = np.logical_and(mergeAll[:, ridInd] == selectedRIDs[s], adniGOor2Mask)
+      # visitsOrderADNIGO2 = np.argsort(mergeAll[maskCurrSubjADNIGO2, 6])  # find order from EXAMDATE
+      # currSubjADNIGO2IdxOrd = np.where(maskCurrSubjADNIGO2)[0][visitsOrderADNIGO2]
+      # LB4[currSubjADNIGO2IdxOrd[0]] = 1
+      LB4[maskCurrSubjADNIGO2] = 1
     
-    # set D1_1 to be everything not included in D1_2 and D1_4
-    notD1orD4Mask = np.logical_not(np.logical_or(D1_2 == 1, D1_4 == 1))
+    # set LB1 to be all other subjects not included in LB2 and LB4
+    notLB2orLB4Mask = np.logical_not(np.logical_or(LB2 == 1, LB4 == 1))
     ridNotSelectedMask = np.logical_not(np.in1d(mergeAll[:, ridInd], selectedRIDs))
-    D1_1 = ridNotSelectedMask.astype(int)
+    LB1 = ridNotSelectedMask.astype(int)
     
     nrRowsMergeAll = mergeAllPlus.shape[0]
     for r in range(nrRowsMergeAll):
@@ -1280,9 +1284,9 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
       mergeAllPlus[r, 4] = isInD1 # D1
       mergeAllPlus[r, 5] = rowsArray[indexInRowsArray[0]][2] # D2
       
-      mergeAllPlus[r, 6] = D1_1[r]  # D1_1
-      mergeAllPlus[r, 7] = D1_2[r] # D1_2
-      mergeAllPlus[r, 8] = D1_4[r] # D1_4
+      mergeAllPlus[r, 6] = LB1[r]  # LB1
+      mergeAllPlus[r, 7] = LB2[r] # D1_2
+      mergeAllPlus[r, 8] = LB4[r] # D1_4
   
   # add entries also in the dictionary
   nrRowsSoFar = dictAll.shape[0]
@@ -1300,20 +1304,20 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
   dictAllPlus[5, 1] = b'D2'
   dictAllPlus[5, 5] = b'Denotes whether participant belongs to dataset D2'
   
-  dictAllPlus[6, 1] = b'D1_1'
-  dictAllPlus[6, 5] = b'Denotes whether participant belongs to dataset D1_1'
+  dictAllPlus[6, 1] = b'LB1'
+  dictAllPlus[6, 5] = b'Denotes whether participant belongs to dataset LB1'
   
-  dictAllPlus[7, 1] = b'D1_2'
+  dictAllPlus[7, 1] = b'LB2'
   dictAllPlus[7, 5] = b'Denotes whether participant belongs to dataset D2_2'
   
-  dictAllPlus[8, 1] = b'D1_4'
+  dictAllPlus[8, 1] = b'LB4'
   dictAllPlus[8, 5] = b'Denotes whether participant belongs to dataset D1_4'
 
   
   dictAllPlus[9, 1] = b'DXCHANGE'
   dictAllPlus[9, 5] = b'1=Stable:NL to NL, 2=Stable:MCI to MCI, 3=Stable:AD to AD, ' \
                       b'4=Conv:NL to MCI, 5=Conv:MCI to AD, 6=Conv:NL to AD, ' \
-                      b'7=Rev:MCI to NL, 8=Rev:AD to MCI, 9=Rev:AD to NL'
+                      b'7=Rev:MCI to NL, 8=Rev:AD to MCI, 9=Rev:AD to NL, -1=Not available'
 
   
   # dictAllPlus = dictAllPlus[:,[0,1,2,3,4,5,7,8,9,10,11,6]]
@@ -1326,75 +1330,72 @@ def decodeIfBinary(s):
   else:
     return s.decode('utf-8')
 
-print('Calling TADPOLE_D2.py')
-import subprocess
-subprocess.call(['python','TADPOLE_D2.py'])
-print('TADPOLE_D2.py finished')
+# print('Calling TADPOLE_D2.py')
+# import subprocess
+# subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+# print('TADPOLE_D2.py finished')
 
-runPart = 1
+runPart = 2
 
 mergePlusFileP1 = 'mergePlusPartialP1.npz'
 
 # Longitudinal FreeSurfer
-mriADNI1FileFSL = 'UCSFFSL_02_01_16.csv'
-mriADNI1DictFSL = 'UCSFFSL_DICT_11_01_13.csv'
-mriADNI2FileFSL = 'UCSFFSL51ALL_08_01_16.csv'
-mriADNI2DictFSL = 'UCSFFSL51ALL_DICT_05_04_16.csv'
-
-############ Cross-sectional FreeSurfer ############
-mriADNI1FileFSX = 'UCSFFSX_11_02_15.csv'
-mriADNI1DictFSX = 'UCSFFSX_DICT_08_01_14.csv'
-mriADNI2FileFSX = 'UCSFFSX51_08_01_16.csv'
-mriADNI2DictFSX = 'UCSFFSX51_DICT_08_01_14.csv'
+mriADNI1FileFSL = '%s/UCSFFSL_02_01_16.csv' % args.spreadsheetFolder
+mriADNI1DictFSL = '%s/UCSFFSL_DICT_11_01_13.csv' % args.spreadsheetFolder
+mriADNI2FileFSL = '%s/UCSFFSL51ALL_08_01_16.csv' % args.spreadsheetFolder
+mriADNI2DictFSL = '%s/UCSFFSL51ALL_DICT_05_04_16.csv' % args.spreadsheetFolder
 
 if runPart in [0,1]:
-  adniMergeFile = 'ADNIMERGE.csv'
-  adniMergeDict = 'ADNIMERGE_DICT.csv'
+  adniMergeFile = '%s/ADNIMERGE.csv' % args.spreadsheetFolder
+  adniMergeDict = '%s/ADNIMERGE_DICT.csv' % args.spreadsheetFolder
   mergeAll, ridInd, ptidInd, visCodeInd, header, dictAll = loadADNIMerge(adniMergeFile, adniMergeDict)
-  
-  diagFile = 'DXSUM_PDXCONV_ADNIALL.csv'
+
+  diagFile = '%s/DXSUM_PDXCONV_ADNIALL.csv' % args.spreadsheetFolder
   mergeAll, header = changeDiagToLongit(diagFile, mergeAll, ridInd, ptidInd, visCodeInd,
     header) # also modified header DX_bl ->DX_longitudinal
-  
+
   # Longitudinal FreeSurfer
   mergeAll, header = appendMRIADNI1FSL(mriADNI1FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header)
   mergeAll, header, dictAll = appendMRIADNI2FSL(mriADNI2FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header, mriADNI1FileFSL, mriADNI1DictFSL, dictAll)
+
+  ############ Cross-sectional FreeSurfer ############
+  mriADNI1FileFSX = '%s/UCSFFSX_11_02_15.csv' % args.spreadsheetFolder
+  mriADNI1DictFSX = '%s/UCSFFSX_DICT_08_01_14.csv' % args.spreadsheetFolder
+  mriADNI2FileFSX = '%s/UCSFFSX51_08_01_16.csv' % args.spreadsheetFolder
+  mriADNI2DictFSX = '%s/UCSFFSX51_DICT_08_01_14.csv' % args.spreadsheetFolder
 
   # Cross-sectional FreeSurfer
   mergeAll, header = appendMriADNI1FSX(mriADNI1FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header)
 
   mergeAll, header, dictAll = appendMriADNI2FSX(mriADNI2FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header,
-    mriADNI1FileFSX, mriADNI1DictFSX, dictAll)
+                                                mriADNI1FileFSX, mriADNI1DictFSX, dictAll)
 
-  
-  fdgPetFile = 'BAIPETNMRC_09_12_16.csv'
-  fdgPetDict = 'BAIPETNMRC_DICT_09_12_16.csv'
-  mergeAll, header, dictAll = appendFdgPet(fdgPetFile, mergeAll, ridInd, ptidInd, visCodeInd, header,
-    fdgPetDict, dictAll)
-  
-  av45File = 'UCBERKELEYAV45_10_17_16.csv'
-  av45Dict = 'UCBERKELEYAV45_DICT_06_15_16.csv'
-  mergeAll, header, dictAll = appendAv45Pet(av45File, mergeAll, ridInd, ptidInd, visCodeInd, header,
-    av45Dict, dictAll)
-  
-  av1451File = 'UCBERKELEYAV1451_10_17_16.csv'
-  av1451Dict = 'UCBERKELEYAV1451_DICT_10_17_16.csv'
-  mergeAll, header, dictAll = appendAv1451Pet(av1451File, mergeAll, ridInd, ptidInd, visCodeInd, header,
-    av1451Dict, dictAll)
-  
+  fdgPetFile = '%s/BAIPETNMRC_09_12_16.csv' % args.spreadsheetFolder
+  fdgPetDict = '%s/BAIPETNMRC_DICT_09_12_16.csv' % args.spreadsheetFolder
+  mergeAll, header, dictAll = appendFdgPet(fdgPetFile, mergeAll, ridInd, ptidInd, visCodeInd, header, fdgPetDict,
+                                           dictAll)
+
+  av45File = '%s/UCBERKELEYAV45_10_17_16.csv' % args.spreadsheetFolder
+  av45Dict = '%s/UCBERKELEYAV45_DICT_06_15_16.csv' % args.spreadsheetFolder
+  mergeAll, header, dictAll = appendAv45Pet(av45File, mergeAll, ridInd, ptidInd, visCodeInd, header, av45Dict, dictAll)
+
+  av1451File = '%s/UCBERKELEYAV1451_10_17_16.csv' % args.spreadsheetFolder
+  av1451Dict = '%s/UCBERKELEYAV1451_DICT_10_17_16.csv' % args.spreadsheetFolder
+  mergeAll, header, dictAll = appendAv1451Pet(av1451File, mergeAll, ridInd, ptidInd, visCodeInd, header, av1451Dict,
+                                              dictAll)
+
   # don't use PIB as there are only around 200 entries in the spreadsheet, and is only available for ADNI1.
   # pibFile = 'MRI/PIBPETSUVR.csv'
   # mergeAll, header = appendAv45Pet(pibFile, mergeAll, ridInd, ptidInd, visCodeInd, header)
-  
-  dtiFile = 'DTIROI_04_30_14.csv'
-  dtiDict = 'DTIROI_DICT_04_30_14.csv'
+
+  dtiFile = '%s/DTIROI_04_30_14.csv' % args.spreadsheetFolder
+  dtiDict = '%s/DTIROI_DICT_04_30_14.csv' % args.spreadsheetFolder
   mergeAll, header, dictAll = appendDTI(dtiFile, mergeAll, ridInd, ptidInd, visCodeInd, header, dtiDict, dictAll)
-  
-  csfFile = 'UPENNBIOMK9_04_19_17.csv'
-  csfDict = 'UPENNBIOMK9_DICT_04_19_17.csv'
-  mergeAll, header, dictAll = appendCSF(csfFile, mergeAll, ridInd, ptidInd, visCodeInd, header,
-    csfDict, dictAll)
-  
+
+  csfFile = '%s/UPENNBIOMK9_04_19_17.csv' % args.spreadsheetFolder
+  csfDict = '%s/UPENNBIOMK9_DICT_04_19_17.csv' % args.spreadsheetFolder
+  mergeAll, header, dictAll = appendCSF(csfFile, mergeAll, ridInd, ptidInd, visCodeInd, header, csfDict, dictAll)
+
   dataStruct = dict(mergeAll=mergeAll, ridInd=ridInd, ptidInd=ptidInd, visCodeInd=visCodeInd,
     header=header, dictAll=dictAll)
   pickle.dump(dataStruct, open(mergePlusFileP1, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
@@ -1407,7 +1408,7 @@ else:
   header = dataStruct['header']
   dictAll = dataStruct['dictAll']
 
-d2File = 'TADPOLE_D2_column.csv'
+d2File = '%s/TADPOLE_D2_column.csv' % args.spreadsheetFolder
 mergeAll, header, dictAll = addDcolumns(d2File, mergeAll, ridInd, ptidInd, visCodeInd, header, dictAll)
 
 print('len(header)', len(header))
@@ -1422,19 +1423,20 @@ with open('TADPOLE_D1_D2.csv', 'w') as f:
     f.write(','.join([decodeIfBinary(mergeAll[r, c]) for c in range(mergeAll.shape[1])]))
     f.write('\n')
 
-# fromColInd = 900
-# with open('TADPOLE_D1_D2_Part2.csv', 'w') as f:
-#   f.write(','.join(header[:4] + header[fromColInd:]) + '\n')
-#   for r in range(mergeAll.shape[0]):
-#     f.write(','.join([decodeIfBinary(mergeAll[r, c]) for c in [0,1,2,3] + list(range(fromColInd, mergeAll.shape[1]))]))
-#     f.write('\n')
+fromColInd = 900
+with open('TADPOLE_D1_D2_Part2.csv', 'w') as f:
+  f.write(','.join(header[:4] + header[fromColInd:]) + '\n')
+  for r in range(mergeAll.shape[0]):
+    f.write(','.join([decodeIfBinary(mergeAll[r, c]) for c in [0,1,2,3] + list(range(fromColInd, mergeAll.shape[1]))]))
+    f.write('\n')
 
 with open('TADPOLE_D1_D2_Dict.csv', 'w') as f:
   for r in range(dictAll.shape[0]):
     f.write(','.join(['"%s"' % decodeIfBinary(dictAll[r, c]) for c in range(dictAll.shape[1])]))
     f.write('\n')
 
-print('Calling TADPOLE_D3.py')
-import subprocess
-subprocess.call(['python','TADPOLE_D3.py'])
-print('TADPOLE_D3.py finished')
+print('mergeAll.shape', mergeAll.shape)
+# print('Calling TADPOLE_D3.py')
+# import subprocess
+# subprocess.call(['python3','TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+# print('TADPOLE_D3.py finished')
