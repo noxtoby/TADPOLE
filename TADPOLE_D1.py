@@ -1221,27 +1221,39 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
       if np.sum(maskCurrSubjADNIGo2) >= 1:
         atLeastOneTimeptInAdniGo2Mask[s] = True
     
-    # now take the potential RIDs and sample 200 CN and 100 MCI
+
     lastDiagCnMCI = np.logical_or(lastDiag == CN, lastDiag == MCI)
-    print('atLeastTwoTimeptsInAdni1Mask', np.sum(atLeastTwoTimeptsInAdni1Mask))
-    print('lastDiagCnMCI', np.sum(lastDiagCnMCI))
-    print('lastDiag == AD', np.sum(lastDiag == AD))
-    print('rids for subj without DIAG:', mergeAll[lastDiag == 0, ridInd])
-    print('atLeastOneTimeptInAdniGo2Mask', np.sum(atLeastOneTimeptInAdniGo2Mask))
+    # print('atLeastTwoTimeptsInAdni1Mask', np.sum(atLeastTwoTimeptsInAdni1Mask))
+    # print('lastDiagCnMCI', np.sum(lastDiagCnMCI))
+    # print('lastDiag == AD', np.sum(lastDiag == AD))
+    # print('rids for subj without DIAG:', mergeAll[lastDiag == 0, ridInd])
+    # print('atLeastOneTimeptInAdniGo2Mask', np.sum(atLeastOneTimeptInAdniGo2Mask))
     filterMask = np.logical_and(atLeastTwoTimeptsInAdni1Mask, lastDiagCnMCI)
-    print('atLeastTwoTimeptsInAdni1Mask, lastDiagCnMCI', np.sum(filterMask))
+    # print('atLeastTwoTimeptsInAdni1Mask, lastDiagCnMCI', np.sum(filterMask))
     filterMask = np.logical_and(filterMask, atLeastOneTimeptInAdniGo2Mask)
-    print('filterMask, atLeastOneTimeptInAdniGo2Mask', np.sum(filterMask))
+    # print('filterMask, atLeastOneTimeptInAdniGo2Mask', np.sum(filterMask))
+    # print('filterMask.shape', filterMask.shape)
+    # print('lastDiag.shape', lastDiag.shape)
+    # print('unqRids.shape', unqRids.shape)
+    # print('mergeAll.shape',mergeAll.shape)
+    # print('nrTwoTimepts', unqRids[atLeastTwoTimeptsInAdni1Mask].shape)
+    # print('nr Rollovers', unqRids[atLeastOneTimeptInAdniGo2Mask].shape)
+    # print('nr CtlMci', unqRids[lastDiagCnMCI].shape)
+
     potentialRIDsLB2 = unqRids[filterMask]
     lastDiag = lastDiag[filterMask]
     nrPotRIDs = potentialRIDsLB2.shape[0]
     potRIDsCN = potentialRIDsLB2[lastDiag == CN]
     potRIDsMCI = potentialRIDsLB2[lastDiag == MCI]
 
-    print('potRIDsCN.shape', potRIDsCN.shape)
-    print('potRIDsMCI.shape', potRIDsMCI.shape)
+    # print('potentialRIDsLB2.shape', potentialRIDsLB2.shape)
+    # print(adsas)
+
+    # print('potRIDsCN.shape', potRIDsCN.shape)
+    # print('potRIDsMCI.shape', potRIDsMCI.shape)
     # print(adsa)
 
+    # now take the potential RIDs and sample 2/3 of data for training
     nrCN = int(potRIDsCN.shape[0]/1.5)
     nrMCI = int(potRIDsMCI.shape[0]/1.5)
     selectedRIDsCN = np.random.choice(potRIDsCN, nrCN)
@@ -1249,10 +1261,10 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
     selectedRIDs = np.concatenate((selectedRIDsCN, selectedRIDsMCI), axis=0)
     nrSelRIDs = selectedRIDs.shape[0]
     
-    print('selectedRIDsCN', selectedRIDsCN)
-    print('selectedRIDsMCI', selectedRIDsMCI)
-    print('selectedRIDs', selectedRIDs)
-    print('selectedRIDs.shape', selectedRIDs.shape)
+    # print('selectedRIDsCN', selectedRIDsCN)
+    # print('selectedRIDsMCI', selectedRIDsMCI)
+    # print('selectedRIDs', selectedRIDs)
+    # print('selectedRIDs.shape', selectedRIDs.shape)
     # print(adas)
     
     LB2 = np.zeros(mergeAllPlus.shape[0], int)
@@ -1494,16 +1506,16 @@ def checkDatasets(df):
       print('subject in LB2 desnt have CN or MCI diag:', lb2RID[r], diagLastADNI1VisitCurr, dxChangeListCurr)
 
   # check LB4. check if these visits are all in ADNI GO/2
-  print(df['COLPROT'][df['LB4'] == 1])
+  # print(df['COLPROT'][df['LB4'] == 1])
   assert np.in1d(df['COLPROT'][df['LB4'] == 1], ['ADNIGO', 'ADNI2']).all()
 
 
-# print('Calling TADPOLE_D2.py')
-# import subprocess
-# subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
-# print('TADPOLE_D2.py finished')
+print('Calling TADPOLE_D2.py')
+import subprocess
+subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+print('TADPOLE_D2.py finished')
 
-runPart = ['R', 'R']
+runPart = ['L', 'R']
 
 mergePlusFileP1 = 'mergePlusPartialP1.npz'
 
@@ -1615,11 +1627,17 @@ if runPart[1] == 'R':
       f.write(','.join(['"%s"' % decodeIfBinary(dictAll[r, c]) for c in range(dictAll.shape[1])]))
       f.write('\n')
 
+print('Calling TADPOLE_D3.py')
+import subprocess
+subprocess.call(['python3', 'TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+print('TADPOLE_D3.py finished')
+
+
 
 ######### Perform checks ###################
 tadpoleDF = pd.read_csv(tadpoleFile)
 
-performChecksFlag = False
+performChecksFlag = True
 
 if performChecksFlag:
   ssNameTag = ''
@@ -1643,29 +1661,24 @@ if performChecksFlag:
   performChecks(tadpoleDF, ssDF, mriADNI2FileFSX, otherSSvisCodeStr = 'VISCODE2', ssNameTag=ssNameTag,
                 ignoreMissingCols=True)
 
-  # ssNameTag = '_%s' % fdgPetFile[:-4].split('/')[-1]
-  # ssDF = pd.read_csv(fdgPetFile)
-  # performChecks(tadpoleDF, ssDF, fdgPetFile, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
-  #
-  # ssNameTag = '_%s' % av45File[:-4].split('/')[-1]
-  # ssDF = pd.read_csv(av45File)
-  # performChecks(tadpoleDF, ssDF, av45File, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
-  #
-  # ssNameTag = '_%s' % av1451File[:-4].split('/')[-1]
-  # ssDF = pd.read_csv(av1451File)
-  # performChecks(tadpoleDF, ssDF, av1451File, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
-  #
-  # ssNameTag = '_%s' % dtiFile[:-4].split('/')[-1]
-  # ssDF = pd.read_csv(dtiFile)
-  # performChecks(tadpoleDF, ssDF, dtiFile, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
+  ssNameTag = '_%s' % fdgPetFile[:-4].split('/')[-1]
+  ssDF = pd.read_csv(fdgPetFile)
+  performChecks(tadpoleDF, ssDF, fdgPetFile, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
+
+  ssNameTag = '_%s' % av45File[:-4].split('/')[-1]
+  ssDF = pd.read_csv(av45File)
+  performChecks(tadpoleDF, ssDF, av45File, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
+
+  ssNameTag = '_%s' % av1451File[:-4].split('/')[-1]
+  ssDF = pd.read_csv(av1451File)
+  performChecks(tadpoleDF, ssDF, av1451File, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
+
+  ssNameTag = '_%s' % dtiFile[:-4].split('/')[-1]
+  ssDF = pd.read_csv(dtiFile)
+  performChecks(tadpoleDF, ssDF, dtiFile, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
 
   ssNameTag = '_%s' % csfFile[:-4].split('/')[-1]
   ssDF = pd.read_csv(csfFile)
   performChecks(tadpoleDF, ssDF, csfFile, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
 
 checkDatasets(tadpoleDF)
-
-print('Calling TADPOLE_D3.py')
-import subprocess
-subprocess.call(['python3','TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
-print('TADPOLE_D3.py finished')
