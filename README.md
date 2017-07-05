@@ -1,5 +1,5 @@
 # TADPOLE
-Scripts to generate TADPOLE datasets for [TADPOLE Challenge](http://tadpole.grand-challenge.org)
+Neil's dodgy-and-still-in-progress MATLAB scripts for generating TADPOLE datasets for [TADPOLE Challenge](http://tadpole.grand-challenge.org)
 brought to you by the [EuroPOND consortium](http://europond.eu)
 in association with the [Alzheimer's Disease Neuroimaging Initiative](http://adni.loni.usc.edu) (ADNI)
 
