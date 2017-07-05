@@ -1515,7 +1515,7 @@ import subprocess
 subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
 print('TADPOLE_D2.py finished')
 
-runPart = ['L', 'R']
+runPart = ['R', 'R']
 
 mergePlusFileP1 = 'mergePlusPartialP1.npz'
 
