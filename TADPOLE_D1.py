@@ -35,21 +35,35 @@ parser = argparse.ArgumentParser(
     * DTIROI_DICT_04_30_14.csv
     * UPENNBIOMK9_04_19_17.csv
     * UPENNBIOMK9_DICT_04_19_17.csv
-    * D2_column.csv
+
+    The simplest way to run it is with python3 TADPOLE_D1.py. The script requires several python libraries, such as:
+    numpy
+    scipy
+    subprocess
+    pickle
+    pandas
+    csv
  ''', formatter_class=RawTextHelpFormatter
 )
 
 parser.add_argument('--spreadsheetFolder', dest='spreadsheetFolder', default='.',
                    help='folder of output spreadsheets')
 
+parser.add_argument('--runPart', dest='runPart', default='0',type=int,
+                   help='0-run full script   1-only the first part, generate intermediate result file 2-only second '
+                        'part. If you want to generate the spreadsheet, leave it to 0.')
+
+parser.add_argument('--cellWidth', dest='cellWidth', default='100',type=int,
+                   help='decides the cell width, lave to default value. Only used by developers')
+
 CN = 1
 MCI = 2
 AD = 3
-dataType = 'S100'
 
 np.random.seed(1)
 
 args = parser.parse_args()
+dataType = 'S%d' % args.cellWidth
 
 def filterData(filterInd, isProc, subjID, visit, magStrength, sequence, scanDate,
   studyID, seriesID, imageID):
@@ -1175,10 +1189,10 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
     
     # LB1 - prelim training set
     # LB2 - prelim prediction set
-    # DLB4 - prelim test set
+    # LB4 - prelim test set
     
     #  LB2
-      # contains 200 CN, 200 MCI subjects from ADNI1 who have at least one visit in ADNI GO/2
+      # contains CN and MCI subjects from ADNI1 who have at least one visit in ADNI GO/2
       # these subjects must be CN or MCI at last timepoint in ADNI1
     # LB4
       # contains same subjects as D1_2, just the next timepoint (from ADNI GO/2)
@@ -1494,26 +1508,34 @@ def checkDatasets(df):
   print(dfREG_table.columns)
   ridNotOk = []
 
+  # dfREG_table.reset_index(drop=True, inplace=True)
+  # dfREG_table = dfREG_table.iloc[(dfREG_table['Phase'] == 'ADNI2').values]
+
   dfREG_table.sort_values(by=['RID', 'EXAMDATE_x'],
     ascending=[True,True], inplace=True)
   dfREG_table.reset_index(drop=True, inplace=True)
 
+
   for r in range(dfREG_table.shape[0]):
-    partEnrolled = dfREG_table['PTSTATUS'][r] == 1 and dfREG_table['PTSTATUS'][r] == 1
+    partEnrolled = dfREG_table['PTSTATUS'][r] == 1
     currPartMask = dfREG_table['RID'] == dfREG_table['RID'][r]
-    partEnrolledAll = (dfREG_table['PTSTATUS'][currPartMask] == 1) & (dfREG_table['RGSTATUS'][currPartMask] == 1)
-    partEnrolledLastVisit = partEnrolledAll.iloc[-1]
+    partEnrolledAll = (dfREG_table['PTSTATUS'][currPartMask] == 1) #& (dfREG_table['RGSTATUS'][currPartMask] == 1)
+    atLeastOnePtStatusEq1 = (dfREG_table['PTSTATUS'][currPartMask] == 1).any()
+    noPtStatusEq1 = not ((dfREG_table['PTSTATUS'][currPartMask & (dfREG_table['Phase'] == 'ADNI2')] == 2).any())
+    # partEnrolledLastVisit = partEnrolledAll.iloc[-1]
+    partEnrolled = atLeastOnePtStatusEq1 and noPtStatusEq1
     adni2Phase = dfREG_table['COLPROT'][r] == 'ADNI2'
 
-    if adni2Phase and dfREG_table['D2'][r] == 1 and not partEnrolledLastVisit:
-      print('participant in D2 but not enrolled', dfREG_table['RID'][r], dfREG_table['VISCODE_x'][r],
-        dfREG_table['D2'][r], dfREG_table['PTSTATUS'][r],  dfREG_table['RGSTATUS'][r], partEnrolledLastVisit, partEnrolledAll, dfREG_table['VISCODE_x'][currPartMask])
+    if adni2Phase and dfREG_table['D2'][r] == 1 and not partEnrolled:
+      print('participant in D2 but not enrolled\n', dfREG_table[['COLPROT', 'RID', 'VISCODE_x', 'VISCODE_y', 'D2',
+                                                                                                         'PTSTATUS']][
+        currPartMask],
+            partEnrolled, partEnrolledAll)
       ridNotOk += [dfREG_table['RID'][r]]
 
   unqRIDnotOk = np.unique(ridNotOk)
-  print('unqRIDnotOk', unqRIDnotOk)
-  # print(adasd)
-
+  print('unqRIDnotOk', unqRIDnotOk) # should only show 1148, but that is only due to misalignment in the
+  # checking function between the tables.
 
   # check LB2.
   # 1. all subjects should be CN or MCI at last ADNI1 visit
@@ -1545,14 +1567,23 @@ def checkDatasets(df):
   assert np.in1d(df['COLPROT'][df['LB4'] == 1], ['ADNIGO', 'ADNI2']).all()
 
 
-print('Calling TADPOLE_D2.py')
-import subprocess
-subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
-print('TADPOLE_D2.py finished')
+# print('Calling TADPOLE_D2.py')
+# import subprocess
+# subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+# print('TADPOLE_D2.py finished')
 
-runPart = ['L', 'R']
+print(args.runPart)
+if args.runPart == 0:
+  runPart = ['R', 'R']
+elif args.runPart == 1:
+  runPart = ['R', 'L']
+elif args.runPart == 2:
+  runPart = ['L', 'R']
+else:
+  raise ValueError('--runPart can only be 0, 1 or 2')
 
-mergePlusFileP1 = 'mergePlusPartialP1.npz'
+
+mergePlusFileP1 = 'mergePlusPartialP1_S%d.npz' % args.cellWidth
 
 adniMergeFile = '%s/ADNIMERGE.csv' % args.spreadsheetFolder
 adniMergeDict = '%s/ADNIMERGE_DICT.csv' % args.spreadsheetFolder
@@ -1644,6 +1675,10 @@ if runPart[1] == 'R':
   print('mergeAll.shape[1]', mergeAll.shape[1])
   assert len(header) == mergeAll.shape[1]
 
+  sortedIndByRID = np.argsort(mergeAll[:,ridInd])
+  mergeAll = mergeAll[sortedIndByRID,:]
+  # print(mergeAll)
+
   with open(tadpoleFile, 'w') as f:
     f.write(','.join(header) + '\n')
     for r in range(mergeAll.shape[0]):
@@ -1662,10 +1697,10 @@ if runPart[1] == 'R':
       f.write(','.join(['"%s"' % decodeIfBinary(dictAll[r, c]) for c in range(dictAll.shape[1])]))
       f.write('\n')
 
-print('Calling TADPOLE_D3.py')
-import subprocess
-subprocess.call(['python3', 'TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
-print('TADPOLE_D3.py finished')
+# print('Calling TADPOLE_D3.py')
+# import subprocess
+# subprocess.call(['python3', 'TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+# print('TADPOLE_D3.py finished')
 
 
 

@@ -178,23 +178,31 @@ if __name__ == '__main__':
     DXARM_table = assignBaselineDX(DXARM_table)
     
     #*** Select ADNI2 participants
-    REGISTRY_ADNI2_bool = (REGISTRY_table['Phase']=='ADNI2') # & (REGISTRY_table['RGSTATUS'] == 1)
+    REGISTRY_ADNI2_bool = (REGISTRY_table['Phase']=='ADNI2') #& (REGISTRY_table['RGSTATUS'] == 1)
     REGISTRY_table_ADNI2 = REGISTRY_table.iloc[REGISTRY_ADNI2_bool.values]
     
     #*** Merge tables to find potential ADNI3 rollovers
     #* Join DXARM to REGISTRY
-    DXARMREG_table = DXARM_table.merge(REGISTRY_table_ADNI2,'left',['RID','Phase','VISCODE'])
+    DXARMREG_table = REGISTRY_table_ADNI2.merge(DXARM_table,'left',['RID','Phase','VISCODE'])
     #* Remove missing values (shouldn't be any)
-    DXCHANGE_notmissing = ~np.isnan(DXARMREG_table['DXCHANGE']).values
-    DXARMREG_table = DXARMREG_table.iloc[DXCHANGE_notmissing]
+    # DXCHANGE_notmissing = ~np.isnan(DXARMREG_table['DXCHANGE']).values
+    # print(DXARMREG_table[['Phase', 'ID', 'RID', 'VISCODE', 'USERDATE', 'PTSTATUS', 'RGSTATUS',
+    #                       'EXAMDATE', 'DXCHANGE']][DXARMREG_table.RID == 107])
+    # DXARMREG_table = DXARMREG_table.iloc[DXCHANGE_notmissing]
     #* ADNI2 and active
     uniqueRIDs = DXARMREG_table.RID.unique()
     nrUnqRIDs = uniqueRIDs.shape[0]
     # lastVisitMask = np.zeros(DXARMREG_table.shape[0], bool)
     hasAtLeastOnePtstatusEq1 = np.zeros(DXARMREG_table.shape[0], bool)
 
-    notRollovers = np.array([ 107,  160,  479,  922,  1116, 1318, 2026, 2210, 4010, 4022, 4406, 4729, 4827,
-      4906, 5162, 5235])
+    # print(REGISTRY_table_ADNI2[['Phase', 'ID', 'RID', 'VISCODE', 'USERDATE', 'PTSTATUS', 'RGSTATUS',
+    #                       'EXAMDATE']][REGISTRY_table_ADNI2.RID == 107])
+    # print(DXARMREG_table[['Phase', 'ID', 'RID', 'VISCODE', 'USERDATE', 'PTSTATUS', 'RGSTATUS',
+    #                       'EXAMDATE']][DXARMREG_table.RID == 107])
+    # print(adsa)
+
+    # notRollovers = np.array([ 107,  160,  479,  922,  1116, 1318, 2026, 2210, 4010, 4022, 4406, 4729, 4827,
+    #   4906, 5162, 5235])
 
     hasNoPtstatusEq2 = np.zeros(DXARMREG_table.shape[0], bool)
     for r in range(nrUnqRIDs):
@@ -203,19 +211,20 @@ if __name__ == '__main__':
       hasNoPtstatusEq2[currPartMask] = not ((DXARMREG_table.PTSTATUS[currPartMask] == 2).any())
       # indexInDXARMREG_table = np.where(currPartMask)[0][-1]
       # lastVisitMask[indexInDXARMREG_table] = 1
-      if uniqueRIDs[r] in notRollovers:
-        print('check not Rollovers', uniqueRIDs[r], (DXARMREG_table.PTSTATUS[currPartMask] == 1).any(), not ((DXARMREG_table.PTSTATUS[currPartMask] == 2).any()))
-        print('DXARMREG_table.PTSTATUS[currPartMask]', DXARMREG_table.PTSTATUS[currPartMask])
+      # if uniqueRIDs[r] in notRollovers:
+      #   print('check not Rollovers', uniqueRIDs[r], (DXARMREG_table.PTSTATUS[currPartMask] == 1).any(), not ((DXARMREG_table.PTSTATUS[currPartMask] == 2).any()))
+      #   print('DXARMREG_table.PTSTATUS[currPartMask]', DXARMREG_table.PTSTATUS[currPartMask])
 
     table_ADNI2_active = DXARMREG_table.iloc[((DXARMREG_table.Phase=='ADNI2') & hasAtLeastOnePtstatusEq1 & hasNoPtstatusEq2).values]
-    print('hasAtLeastOnePtstatusEq1', np.sum(hasAtLeastOnePtstatusEq1))
-    print('hasNoPtstatusEq2', np.sum(hasNoPtstatusEq2))
+    # print('hasAtLeastOnePtstatusEq1', np.sum(hasAtLeastOnePtstatusEq1))
+    # print('hasNoPtstatusEq2', np.sum(hasNoPtstatusEq2))
     # print('table_ADNI2_active', table_ADNI2_active)
     # print(adsa)
     D2_RID = table_ADNI2_active.RID.unique()
+    # print('table_ADNI2_active.columns', table_ADNI2_active.columns)
 
-
-    print('notRollover flags', np.in1d(notRollovers, D2_RID))
+    # print('notRollover flags', np.in1d(notRollovers, D2_RID))
+    # print('# in D2', D2_RID.shape[0])
 
 
     #*** TADPOLE D2: historical data for D2_RID
@@ -225,6 +234,51 @@ if __name__ == '__main__':
     D2_indicator_numeric = 1*D2_indicator
     D2_ = D1_table[['RID','VISCODE']]
     D2 = D2_.assign(D2=D2_indicator_numeric)
+
     D2_file = '%s/TADPOLE_D2_column.csv' % args.spreadsheetFolder # D2_file = 'TADPOLE_D2_column_{0}.csv'.format(runDate)
     D2.to_csv(os.path.join(dataSaveLocation,D2_file),index=False)
+
+    # print('----- missing from neil, existing in raz --------')
+    # neilD2D3matlab = pd.read_csv('D2_D3_columns_20170706.csv')
+    # d2RidUnqNeil = neilD2D3matlab.RID[neilD2D3matlab['D2'] == 1].unique()
+    # d2RidUnqRaz = D2['RID'][D2['D2'] == 1].unique()
+    #
+    #
+    # print('neilUnqRIDs', d2RidUnqNeil)
+    # print('raz UnqRIDs', d2RidUnqRaz)
+    # print('raz shape', d2RidUnqRaz.shape[0])
+    # print('neil shape', d2RidUnqNeil.shape[0])
+    # for r in range(d2RidUnqRaz.shape[0]):
+    #   pass
+    #   if np.sum(d2RidUnqRaz[r] == neilD2D3matlab['RID']) == 0:
+    #     print('RID not found in neil\n', table_ADNI2_active[['Phase', 'ID', 'RID', 'VISCODE','VISCODE2_x','VISCODE2_y',
+    #                                                'USERDATE',
+    #                                                'PTSTATUS', 'RGSTATUS',
+    #                       'EXAMDATE']][table_ADNI2_active.RID == d2RidUnqRaz[r]])
+    #
+    # print('----- missing from raz, existing in neil --------')
+    # print('raz shape', d2RidUnqRaz.shape[0])
+    # print('neil shape', d2RidUnqNeil.shape[0])
+    # for r in range(d2RidUnqNeil.shape[0]):
+    #   pass
+    #   if np.sum(d2RidUnqRaz == d2RidUnqNeil[r]) == 0:
+    #     print('RID not found in raz\n', neilD2D3matlab[
+    #       ['RID', 'VISCODE', 'D2', 'D3']][neilD2D3matlab.RID == d2RidUnqNeil[r]])
+    #     print('', DXARMREG_table[['Phase', 'ID', 'RID', 'VISCODE','VISCODE2_x','VISCODE2_y',
+    #                                                'USERDATE',
+    #                                                'PTSTATUS', 'RGSTATUS',
+    #                       'EXAMDATE']][DXARMREG_table.RID == d2RidUnqNeil[r]])
+    #
+    #
+    # # print('np.in1d(d2RidUnqRaz, d2RidUnqNeil)', np.in1d(d2RidUnqRaz, d2RidUnqNeil))
+    # ridRazNotInNeil = d2RidUnqRaz[~np.in1d(d2RidUnqRaz, d2RidUnqNeil)]
+    # neilNotInRaz = d2RidUnqNeil[~np.in1d(d2RidUnqNeil, d2RidUnqRaz)]
+    # print('raz shape', d2RidUnqRaz.shape[0])
+    # print('neil shape', d2RidUnqNeil.shape[0])
+    #
+    # print('d2RidUnqRaz.dtype',d2RidUnqRaz.dtype)
+    # print('d2RidUnqNeil.dtype', d2RidUnqNeil.dtype)
+    # print('ridRazNotInNeil', ridRazNotInNeil)
+    # print('neilNotInRaz', neilNotInRaz)
+
     
