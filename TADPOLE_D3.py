@@ -70,8 +70,7 @@ if __name__ == '__main__':
     FSL4p3_columns = []
     UCSFFSL5p1_columns = UCSFFSL51.columns
     FSL5p1_columns = []
-    
-    ############ Need to do this also for UCSFFSX tables (cross-sectional FreeSurfer)
+
     for k in range(0,len(UCSFFSL4p3_columns)):
         col = UCSFFSL4p3_columns[k]
         if col[0:2]=='ST':
@@ -83,26 +82,6 @@ if __name__ == '__main__':
             if representsInt(col[2]):
                 FSL5p1_columns.append(col)
 
-    # #### Raz: added Freesurfer Cross-sectional, 01 July 2017 ##########
-    # UCSFFSX4p3_csv = '%s/UCSFFSX_11_02_15.csv' % args.spreadsheetFolder
-    # UCSFFSX5p1_csv = '%s/UCSFFSX51_08_01_16.csv' % args.spreadsheetFolder
-    # UCSFFSX1 = pd.read_csv(UCSFFSX4p3_csv)  # ADNI1: 1.5T
-    # UCSFFSX51 = pd.read_csv(UCSFFSX5p1_csv)  # ADNIGO/2: 3T
-    # UCSFFSX4p3_columns = UCSFFSX1.columns
-    # FSX4p3_columns = []
-    # UCSFFSX5p1_columns = UCSFFSX51.columns
-    # FSX5p1_columns = []
-    #
-    # for k in range(0, len(UCSFFSX4p3_columns)):
-    #   col = UCSFFSX4p3_columns[k]
-    #   if col[0:2] == 'ST':
-    #     if representsInt(col[2]):
-    #       FSX4p3_columns.append(col)
-    # for k in range(0, len(UCSFFSX5p1_columns)):
-    #   col = UCSFFSX5p1_columns[k]
-    #   if col[0:2] == 'ST':
-    #     if representsInt(col[2]):
-    #       FSX5p1_columns.append(col)
 
     UCSFFSL_columns = FSL4p3_columns + FSL5p1_columns
     UCSFFSL_columns_u = set(UCSFFSL_columns)
@@ -116,7 +95,7 @@ if __name__ == '__main__':
     UCSFFSX_columns = [c + '_UCSFFSX_11_02_15_UCSFFSX51_08_01_16' for c in UCSFFSX_columns_manual]
 
     D3_columns = ['RID','VISCODE','EXAMDATE','DX','AGE','PTGENDER','PTEDUCAT','PTETHCAT','PTRACCAT','PTMARRY','COLPROT','ADAS13','MMSE','Ventricles','Hippocampus','WholeBrain','Entorhinal','Fusiform','MidTemp','ICV']
-    D3_columns = D3_columns + UCSFFSL_columns + UCSFFSX_columns
+    D3_columns = D3_columns + UCSFFSX_columns
     
     #* Extract selected individuals and columns from D1 & D2, then select most recent visit
     D3_table = D1_table.loc[D2_indicator==1]

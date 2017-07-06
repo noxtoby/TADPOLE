@@ -1480,6 +1480,31 @@ def checkDatasets(df):
       print('only one visit for D1 rid', d1RIDs[r])
       ridNotOk += [d1RIDs[r]]
 
+  # check D2 - make sure DXARMREG_table.PTSTATUS==1 and REGISTRY_table['RGSTATUS']==1
+  # *** Active, passed screening, etc.
+  REGISTRY_file = '%s/REGISTRY.csv' % args.spreadsheetFolder
+  ROSTER_file = '%s/ROSTER.csv' % args.spreadsheetFolder
+  # *** specifics on EMCI/LMCI/etc
+  ARM_file = '%s/ARM.csv' % args.spreadsheetFolder
+  DXSUM_file = '%s/DXSUM_PDXCONV_ADNIALL.csv' % args.spreadsheetFolder
+  REGISTRY_table = pd.read_csv(REGISTRY_file)
+
+  dfREG_table = df.merge(REGISTRY_table, 'left', left_on=['RID', 'VISCODE'], right_on=['RID', 'VISCODE2'])
+
+  print(dfREG_table.columns)
+
+  for r in range(dfREG_table.shape[0]):
+    partEnrolled = dfREG_table['PTSTATUS'][r] == 1 and dfREG_table['PTSTATUS'][r] == 1
+    currPartMask = dfREG_table['RID'] == dfREG_table['RID'][r]
+    partEnrolledAll = (dfREG_table['PTSTATUS'][currPartMask] == 1) & (dfREG_table['RGSTATUS'][currPartMask] == 1)
+    partEnrolledLastVisit = partEnrolledAll.iloc[-1]
+    adni2Phase = dfREG_table['COLPROT'][r] == 'ADNI2'
+
+    if adni2Phase and dfREG_table['D2'][r] == 1 and not partEnrolledLastVisit:
+      print('participant in D2 but not enrolled', dfREG_table['RID'][r], dfREG_table['VISCODE_x'][r],
+        dfREG_table['D2'][r], dfREG_table['PTSTATUS'][r],  dfREG_table['RGSTATUS'][r], partEnrolledLastVisit)
+
+
   # check LB2.
   # 1. all subjects should be CN or MCI at last ADNI1 visit
   # 2. and have at least two scans in ADNI1
@@ -1515,7 +1540,7 @@ import subprocess
 subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
 print('TADPOLE_D2.py finished')
 
-runPart = ['R', 'R']
+runPart = ['L', 'R']
 
 mergePlusFileP1 = 'mergePlusPartialP1.npz'
 
@@ -1637,7 +1662,7 @@ print('TADPOLE_D3.py finished')
 ######### Perform checks ###################
 tadpoleDF = pd.read_csv(tadpoleFile)
 
-performChecksFlag = True
+performChecksFlag = False
 
 if performChecksFlag:
   ssNameTag = ''
