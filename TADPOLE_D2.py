@@ -238,47 +238,49 @@ if __name__ == '__main__':
     D2_file = '%s/TADPOLE_D2_column.csv' % args.spreadsheetFolder # D2_file = 'TADPOLE_D2_column_{0}.csv'.format(runDate)
     D2.to_csv(os.path.join(dataSaveLocation,D2_file),index=False)
 
-    # print('----- missing from neil, existing in raz --------')
-    # neilD2D3matlab = pd.read_csv('D2_D3_columns_20170706.csv')
-    # d2RidUnqNeil = neilD2D3matlab.RID[neilD2D3matlab['D2'] == 1].unique()
-    # d2RidUnqRaz = D2['RID'][D2['D2'] == 1].unique()
-    #
-    #
-    # print('neilUnqRIDs', d2RidUnqNeil)
-    # print('raz UnqRIDs', d2RidUnqRaz)
-    # print('raz shape', d2RidUnqRaz.shape[0])
-    # print('neil shape', d2RidUnqNeil.shape[0])
-    # for r in range(d2RidUnqRaz.shape[0]):
-    #   pass
-    #   if np.sum(d2RidUnqRaz[r] == neilD2D3matlab['RID']) == 0:
-    #     print('RID not found in neil\n', table_ADNI2_active[['Phase', 'ID', 'RID', 'VISCODE','VISCODE2_x','VISCODE2_y',
-    #                                                'USERDATE',
-    #                                                'PTSTATUS', 'RGSTATUS',
-    #                       'EXAMDATE']][table_ADNI2_active.RID == d2RidUnqRaz[r]])
-    #
-    # print('----- missing from raz, existing in neil --------')
-    # print('raz shape', d2RidUnqRaz.shape[0])
-    # print('neil shape', d2RidUnqNeil.shape[0])
-    # for r in range(d2RidUnqNeil.shape[0]):
-    #   pass
-    #   if np.sum(d2RidUnqRaz == d2RidUnqNeil[r]) == 0:
-    #     print('RID not found in raz\n', neilD2D3matlab[
-    #       ['RID', 'VISCODE', 'D2', 'D3']][neilD2D3matlab.RID == d2RidUnqNeil[r]])
-    #     print('', DXARMREG_table[['Phase', 'ID', 'RID', 'VISCODE','VISCODE2_x','VISCODE2_y',
-    #                                                'USERDATE',
-    #                                                'PTSTATUS', 'RGSTATUS',
-    #                       'EXAMDATE']][DXARMREG_table.RID == d2RidUnqNeil[r]])
-    #
-    #
-    # # print('np.in1d(d2RidUnqRaz, d2RidUnqNeil)', np.in1d(d2RidUnqRaz, d2RidUnqNeil))
-    # ridRazNotInNeil = d2RidUnqRaz[~np.in1d(d2RidUnqRaz, d2RidUnqNeil)]
-    # neilNotInRaz = d2RidUnqNeil[~np.in1d(d2RidUnqNeil, d2RidUnqRaz)]
-    # print('raz shape', d2RidUnqRaz.shape[0])
-    # print('neil shape', d2RidUnqNeil.shape[0])
-    #
-    # print('d2RidUnqRaz.dtype',d2RidUnqRaz.dtype)
-    # print('d2RidUnqNeil.dtype', d2RidUnqNeil.dtype)
-    # print('ridRazNotInNeil', ridRazNotInNeil)
-    # print('neilNotInRaz', neilNotInRaz)
+    performCheck = False
+    if performCheck:
+      print('----- missing from neil, existing in raz --------')
+      neilD2D3matlab = pd.read_csv('D2_D3_columns_20170706.csv')
+      d2RidUnqNeil = neilD2D3matlab.RID[neilD2D3matlab['D2'] == 1].unique()
+      d2RidUnqRaz = D2['RID'][D2['D2'] == 1].unique()
+
+
+      print('neilUnqRIDs', d2RidUnqNeil)
+      print('raz UnqRIDs', d2RidUnqRaz)
+      print('raz shape', d2RidUnqRaz.shape[0])
+      print('neil shape', d2RidUnqNeil.shape[0])
+      for r in range(d2RidUnqRaz.shape[0]):
+        pass
+        if np.sum(d2RidUnqRaz[r] == neilD2D3matlab['RID']) == 0:
+          print('RID not found in neil\n', table_ADNI2_active[['Phase', 'ID', 'RID', 'VISCODE','VISCODE2_x','VISCODE2_y',
+                                                     'USERDATE',
+                                                     'PTSTATUS', 'RGSTATUS',
+                            'EXAMDATE']][table_ADNI2_active.RID == d2RidUnqRaz[r]])
+
+      print('----- missing from raz, existing in neil --------')
+      print('raz shape', d2RidUnqRaz.shape[0])
+      print('neil shape', d2RidUnqNeil.shape[0])
+      for r in range(d2RidUnqNeil.shape[0]):
+        pass
+        if np.sum(d2RidUnqRaz == d2RidUnqNeil[r]) == 0:
+          print('RID not found in raz\n', neilD2D3matlab[
+            ['RID', 'VISCODE', 'D2', 'D3']][neilD2D3matlab.RID == d2RidUnqNeil[r]])
+          print('', DXARMREG_table[['Phase', 'ID', 'RID', 'VISCODE','VISCODE2_x','VISCODE2_y',
+                                                     'USERDATE',
+                                                     'PTSTATUS', 'RGSTATUS',
+                            'EXAMDATE']][DXARMREG_table.RID == d2RidUnqNeil[r]])
+
+
+      # print('np.in1d(d2RidUnqRaz, d2RidUnqNeil)', np.in1d(d2RidUnqRaz, d2RidUnqNeil))
+      ridRazNotInNeil = d2RidUnqRaz[~np.in1d(d2RidUnqRaz, d2RidUnqNeil)]
+      neilNotInRaz = d2RidUnqNeil[~np.in1d(d2RidUnqNeil, d2RidUnqRaz)]
+      print('raz shape', d2RidUnqRaz.shape[0])
+      print('neil shape', d2RidUnqNeil.shape[0])
+
+      print('d2RidUnqRaz.dtype',d2RidUnqRaz.dtype)
+      print('d2RidUnqNeil.dtype', d2RidUnqNeil.dtype)
+      print('ridRazNotInNeil', ridRazNotInNeil)
+      print('neilNotInRaz', neilNotInRaz)
 
     

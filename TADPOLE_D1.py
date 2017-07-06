@@ -54,7 +54,7 @@ parser.add_argument('--runPart', dest='runPart', default='0',type=int,
                         'part. If you want to generate the spreadsheet, leave it to 0.')
 
 parser.add_argument('--cellWidth', dest='cellWidth', default='100',type=int,
-                   help='decides the cell width, lave to default value. Only used by developers')
+                   help='decides the cell width, leave to default value. Only used by developers')
 
 CN = 1
 MCI = 2
@@ -1567,10 +1567,10 @@ def checkDatasets(df):
   assert np.in1d(df['COLPROT'][df['LB4'] == 1], ['ADNIGO', 'ADNI2']).all()
 
 
-# print('Calling TADPOLE_D2.py')
-# import subprocess
-# subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
-# print('TADPOLE_D2.py finished')
+print('Calling TADPOLE_D2.py')
+import subprocess
+subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+print('TADPOLE_D2.py finished')
 
 print(args.runPart)
 if args.runPart == 0:
@@ -1675,32 +1675,28 @@ if runPart[1] == 'R':
   print('mergeAll.shape[1]', mergeAll.shape[1])
   assert len(header) == mergeAll.shape[1]
 
-  sortedIndByRID = np.argsort(mergeAll[:,ridInd])
-  mergeAll = mergeAll[sortedIndByRID,:]
-  # print(mergeAll)
-
   with open(tadpoleFile, 'w') as f:
     f.write(','.join(header) + '\n')
     for r in range(mergeAll.shape[0]):
       f.write(','.join([decodeIfBinary(mergeAll[r, c]) for c in range(mergeAll.shape[1])]))
       f.write('\n')
 
-  fromColInd = 900
-  with open(tadpolePart2File, 'w') as f:
-    f.write(','.join(header[:4] + header[fromColInd:]) + '\n')
-    for r in range(mergeAll.shape[0]):
-      f.write(','.join([decodeIfBinary(mergeAll[r, c]) for c in [0,1,2,3] + list(range(fromColInd, mergeAll.shape[1]))]))
-      f.write('\n')
+  # fromColInd = 900
+  # with open(tadpolePart2File, 'w') as f:
+  #   f.write(','.join(header[:4] + header[fromColInd:]) + '\n')
+  #   for r in range(mergeAll.shape[0]):
+  #     f.write(','.join([decodeIfBinary(mergeAll[r, c]) for c in [0,1,2,3] + list(range(fromColInd, mergeAll.shape[1]))]))
+  #     f.write('\n')
 
   with open(tadpoleDictFile, 'w') as f:
     for r in range(dictAll.shape[0]):
       f.write(','.join(['"%s"' % decodeIfBinary(dictAll[r, c]) for c in range(dictAll.shape[1])]))
       f.write('\n')
 
-# print('Calling TADPOLE_D3.py')
-# import subprocess
-# subprocess.call(['python3', 'TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
-# print('TADPOLE_D3.py finished')
+print('Calling TADPOLE_D3.py')
+import subprocess
+subprocess.call(['python3', 'TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+print('TADPOLE_D3.py finished')
 
 
 
