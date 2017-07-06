@@ -1492,6 +1492,11 @@ def checkDatasets(df):
   dfREG_table = df.merge(REGISTRY_table, 'left', left_on=['RID', 'VISCODE'], right_on=['RID', 'VISCODE2'])
 
   print(dfREG_table.columns)
+  ridNotOk = []
+
+  dfREG_table.sort_values(by=['RID', 'EXAMDATE_x'],
+    ascending=[True,True], inplace=True)
+  dfREG_table.reset_index(drop=True, inplace=True)
 
   for r in range(dfREG_table.shape[0]):
     partEnrolled = dfREG_table['PTSTATUS'][r] == 1 and dfREG_table['PTSTATUS'][r] == 1
@@ -1502,7 +1507,12 @@ def checkDatasets(df):
 
     if adni2Phase and dfREG_table['D2'][r] == 1 and not partEnrolledLastVisit:
       print('participant in D2 but not enrolled', dfREG_table['RID'][r], dfREG_table['VISCODE_x'][r],
-        dfREG_table['D2'][r], dfREG_table['PTSTATUS'][r],  dfREG_table['RGSTATUS'][r], partEnrolledLastVisit)
+        dfREG_table['D2'][r], dfREG_table['PTSTATUS'][r],  dfREG_table['RGSTATUS'][r], partEnrolledLastVisit, partEnrolledAll, dfREG_table['VISCODE_x'][currPartMask])
+      ridNotOk += [dfREG_table['RID'][r]]
+
+  unqRIDnotOk = np.unique(ridNotOk)
+  print('unqRIDnotOk', unqRIDnotOk)
+  # print(adasd)
 
 
   # check LB2.

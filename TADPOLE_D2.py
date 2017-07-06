@@ -178,7 +178,7 @@ if __name__ == '__main__':
     DXARM_table = assignBaselineDX(DXARM_table)
     
     #*** Select ADNI2 participants
-    REGISTRY_ADNI2_bool = (REGISTRY_table['Phase']=='ADNI2') & (REGISTRY_table['RGSTATUS']==1)
+    REGISTRY_ADNI2_bool = (REGISTRY_table['Phase']=='ADNI2') # & (REGISTRY_table['RGSTATUS'] == 1)
     REGISTRY_table_ADNI2 = REGISTRY_table.iloc[REGISTRY_ADNI2_bool.values]
     
     #*** Merge tables to find potential ADNI3 rollovers
@@ -188,9 +188,36 @@ if __name__ == '__main__':
     DXCHANGE_notmissing = ~np.isnan(DXARMREG_table['DXCHANGE']).values
     DXARMREG_table = DXARMREG_table.iloc[DXCHANGE_notmissing]
     #* ADNI2 and active
-    table_ADNI2_active = DXARMREG_table.iloc[((DXARMREG_table.Phase=='ADNI2') & (DXARMREG_table.PTSTATUS==1)).values]
+    uniqueRIDs = DXARMREG_table.RID.unique()
+    nrUnqRIDs = uniqueRIDs.shape[0]
+    # lastVisitMask = np.zeros(DXARMREG_table.shape[0], bool)
+    hasAtLeastOnePtstatusEq1 = np.zeros(DXARMREG_table.shape[0], bool)
+
+    notRollovers = np.array([ 107,  160,  479,  922,  1116, 1318, 2026, 2210, 4010, 4022, 4406, 4729, 4827,
+      4906, 5162, 5235])
+
+    hasNoPtstatusEq2 = np.zeros(DXARMREG_table.shape[0], bool)
+    for r in range(nrUnqRIDs):
+      currPartMask = DXARMREG_table['RID'] == uniqueRIDs[r]
+      hasAtLeastOnePtstatusEq1[currPartMask] = (DXARMREG_table.PTSTATUS[currPartMask] == 1).any()
+      hasNoPtstatusEq2[currPartMask] = not ((DXARMREG_table.PTSTATUS[currPartMask] == 2).any())
+      # indexInDXARMREG_table = np.where(currPartMask)[0][-1]
+      # lastVisitMask[indexInDXARMREG_table] = 1
+      if uniqueRIDs[r] in notRollovers:
+        print('check not Rollovers', uniqueRIDs[r], (DXARMREG_table.PTSTATUS[currPartMask] == 1).any(), not ((DXARMREG_table.PTSTATUS[currPartMask] == 2).any()))
+        print('DXARMREG_table.PTSTATUS[currPartMask]', DXARMREG_table.PTSTATUS[currPartMask])
+
+    table_ADNI2_active = DXARMREG_table.iloc[((DXARMREG_table.Phase=='ADNI2') & hasAtLeastOnePtstatusEq1 & hasNoPtstatusEq2).values]
+    print('hasAtLeastOnePtstatusEq1', np.sum(hasAtLeastOnePtstatusEq1))
+    print('hasNoPtstatusEq2', np.sum(hasNoPtstatusEq2))
+    # print('table_ADNI2_active', table_ADNI2_active)
+    # print(adsa)
     D2_RID = table_ADNI2_active.RID.unique()
-    
+
+
+    print('notRollover flags', np.in1d(notRollovers, D2_RID))
+
+
     #*** TADPOLE D2: historical data for D2_RID
     D1_file = '%s/ADNIMERGE.csv' %  args.spreadsheetFolder
     D1_table = pd.read_csv(D1_file)
