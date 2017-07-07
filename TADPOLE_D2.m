@@ -57,7 +57,9 @@ table_REGISTRY_ADNI23 = table_REGISTRY(ADNI2 | ADNI3,:);
 
 %% REGISTRY => Active at final visit
   ActiveVisits = strcmpi(table_REGISTRY.PTSTATUS,'1');
+  inActiveVisits = strcmpi(table_REGISTRY.PTSTATUS,'2');
   VisitConducted_ADNI1 = strcmpi(table_REGISTRY.RGCONDCT,'1');
+  VisitNotConducted_ADNI1 = strcmpi(table_REGISTRY.RGCONDCT,'0');
   %* Identify most recent visit
   %VISCODE2_num = str2double(strrep(strrep(table_REGISTRY.VISCODE2,'m',''),'bl','0'));
   VISCODE2_num = str2double(strrep(strrep(strrep(strrep(table_REGISTRY.VISCODE2,'scmri','0'),'m',''),'bl','0'),'sc','0'));
@@ -70,40 +72,44 @@ table_REGISTRY_ADNI23 = table_REGISTRY(ADNI2 | ADNI3,:);
   MostRecentVisit_ADNIGO = zeros(size(table_REGISTRY,1),1);
   MostRecentVisit_ADNI2 = zeros(size(table_REGISTRY,1),1);
   for ki=1:length(RID_num_u)
-      rowz = RID_num==RID_num_u(ki);
-      %* Most recent visit, per study phase
-      rowz_ADNI1 = ADNI1 & rowz;
-      rowz_ADNIGO = ADNIGO & rowz;
-      rowz_ADNI2 = ADNI2 & rowz;
-      visitz_ADNI1     = VISCODE2_num(rowz_ADNI1);
-      ptstatusz_ADNI1  = PTSTATUS(rowz_ADNI1);
+    rowz = RID_num==RID_num_u(ki);
+    %* Most recent visit, per study phase
+    rowz_ADNI1  = rowz & ADNI1;
+    rowz_ADNIGO = rowz & ADNIGO;
+    rowz_ADNI2  = rowz & ADNI2;
+    
+    visitz_ADNI1  = VISCODE2_num(rowz_ADNI1);
+    active_ADNI1  = VisitConducted_ADNI1 & rowz_ADNI1;
+    inactive_ADNI1  = VisitNotConducted_ADNI1 & rowz_ADNI1;
       mostRecentVisit_ADNI1 = visitz_ADNI1==max(visitz_ADNI1);
       rowz_ADNI1 = find(rowz_ADNI1);
       MostRecentVisit_ADNI1(rowz_ADNI1(mostRecentVisit_ADNI1)) = 1;
+      
     visitz_ADNIGO    = VISCODE2_num(rowz_ADNIGO);
-    ptstatusz_ADNIGO = PTSTATUS(rowz_ADNIGO);
+    active_ADNIGO = ActiveVisits & rowz_ADNIGO;
+    inactive_ADNIGO = inActiveVisits & rowz_ADNIGO;
       mostRecentVisit_ADNIGO = visitz_ADNIGO==max(visitz_ADNIGO);
       rowz_ADNIGO = find(rowz_ADNIGO);
       MostRecentVisit_ADNIGO(rowz_ADNIGO(mostRecentVisit_ADNIGO)) = 1;
+    
     visitz_ADNI2     = VISCODE2_num(rowz_ADNI2);
-    ptstatusz_ADNI2  = PTSTATUS(rowz_ADNI2);
+    active_ADNI2  = ActiveVisits & rowz_ADNI2;
+    inactive_ADNI2  = inActiveVisits & rowz_ADNI2;
       mostRecentVisit_ADNI2 = visitz_ADNI2==max(visitz_ADNI2);
       rowz_ADNI2 = find(rowz_ADNI2);
       MostRecentVisit_ADNI2(rowz_ADNI2(mostRecentVisit_ADNI2)) = 1;
-    %* Most recent visit overall
+    
+    %* Ensure that no previous ADNIGO/2 PTSTATUS were INACTIVE
     visitz = VISCODE2_num(rowz);
-    ptstatusz = PTSTATUS(rowz);
-    %mostRecentVisit = visitz==max(visitz);
     rowz = find(rowz);
-    %MostRecentVisit(rowz(mostRecentVisit)) = 1;
-    if any(strcmpi(ptstatusz,'2'))
+    if any(inactive_ADNIGO | inactive_ADNI2)
       InactiveAtAnyVisit(rowz) = 1;
     end
   end
   %MostRecentVisit = MostRecentVisit==1; % boolean
   
   %* Identify those who are active at their final visit
-  ActiveAtMostRecentVisit_ADNI1  = MostRecentVisit_ADNI1  & VisitConducted_ADNI1 & ~InactiveAtAnyVisit;
+  ActiveAtMostRecentVisit_ADNI1  = MostRecentVisit_ADNI1  & VisitConducted_ADNI1;
   ActiveAtMostRecentVisit_ADNIGO = MostRecentVisit_ADNIGO & ActiveVisits & ~InactiveAtAnyVisit;
   ActiveAtMostRecentVisit_ADNI2  = MostRecentVisit_ADNI2  & ActiveVisits & ~InactiveAtAnyVisit;
   
