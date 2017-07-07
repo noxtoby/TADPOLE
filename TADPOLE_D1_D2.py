@@ -35,10 +35,15 @@ parser = argparse.ArgumentParser(
     * DTIROI_DICT_04_30_14.csv
     * UPENNBIOMK9_04_19_17.csv
     * UPENNBIOMK9_DICT_04_19_17.csv
+    * TADPOLE_D2_column.csv - needs to be generated beforehand by MATLAB script TADPOLE_D2.m
 
     The simplest way to run it is with
 
         python3 TADPOLE_D1_D2.py
+
+    If the spreadsheets are in a different directory (e.g. parent directory), run it as follows:
+
+        python3 TADPOLE_D1_D2.py --spreadsheetFolder ..
 
     The script requires several python libraries, such as:
     numpy
@@ -1047,90 +1052,6 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
     mergeAllPlus[:,(4+nrExtraCols):] = mergeAll[:,4:]
     headerPlus = mergeHeader[:4] + ['D1', 'D2'] + mergeHeader[4:] #headerPlus = mergeHeader[:4] + ['D1', 'D2'] + mergeHeader[4:]
     
-    # LB1 - prelim training set
-    # LB2 - prelim prediction set
-    # LB4 - prelim test set
-    
-    #  LB2
-      # contains CN and MCI subjects from ADNI1 who have at least one visit in ADNI GO/2
-      # these subjects must be CN or MCI at last timepoint in ADNI1
-    # LB4
-      # contains same subjects as D1_2, just the next timepoint (from ADNI GO/2)
-    # LB1 contains all the remaining subjects
-    
-    # unqRids = np.unique(mergeAll[:,ridInd])
-    # nrSubjLong = unqRids.shape[0]
-    # atLeastTwoTimeptsInAdni1Mask = np.zeros(nrSubjLong, bool)
-    # atLeastOneTimeptInAdniGo2Mask = np.zeros(nrSubjLong, bool)
-    # lastDiag = np.zeros(nrSubjLong, int) # subjects with at least one visit diagnosed as CN or MCI
-    # ctlMciDxchange = [b'1', b'2', b'4', b'7', b'8', b'9']
-    # ctlDxchange = [b'1', b'7', b'9']
-    # mciDxchange = [b'2', b'4', b'8']
-    # adDxChange = [b'3', b'5', b'6']
-    # adniSetInd = 4 # column COLPROT
-    # adniGOor2Mask = np.logical_or(mergeAll[:, adniSetInd] == b'ADNIGO', mergeAll[:, adniSetInd] == b'ADNI2')
-    #
-    # for s in range(unqRids.shape[0]):
-    #   maskCurrSubjADNI1 = np.logical_and(mergeAll[:,ridInd] == unqRids[s], mergeAll[:, adniSetInd] == b'ADNI1')
-    #   if np.sum(maskCurrSubjADNI1) >= 2:
-    #     atLeastTwoTimeptsInAdni1Mask[s] = True
-    #   else:
-    #     continue
-    #
-    #   dxchangeCurrSubjADNI1 = mergeAll[maskCurrSubjADNI1, 8]
-    #   visitsOrder = np.argsort(mergeAll[maskCurrSubjADNI1, 6])  # find order from EXAMDATE
-    #   dxchangeCurrSubjOrdADNI1 = dxchangeCurrSubjADNI1[visitsOrder]
-    #   dxchangeCurrSubjOrdFiltADNI1  = dxchangeCurrSubjOrdADNI1[dxchangeCurrSubjOrdADNI1 != b'']
-    #   # print(dxchangeCurrSubjOrdFilt, dxchangeCurrSubjOrd)
-    #   # print(adsa)
-    #   # make sure subject has last timepoint with CN or MCI diagnosis.
-    #   if np.in1d(dxchangeCurrSubjOrdFiltADNI1[-1], ctlDxchange):
-    #     lastDiag[s] = CN
-    #   elif np.in1d(dxchangeCurrSubjOrdFiltADNI1[-1], mciDxchange):
-    #     lastDiag[s] = MCI
-    #   elif np.in1d(dxchangeCurrSubjOrdFiltADNI1[-1], adDxChange):
-    #     lastDiag[s] = AD
-    #
-    #   maskCurrSubjADNIGo2 = np.logical_and(mergeAll[:,ridInd] == unqRids[s], adniGOor2Mask)
-    #   if np.sum(maskCurrSubjADNIGo2) >= 1:
-    #     atLeastOneTimeptInAdniGo2Mask[s] = True
-    #
-    #
-    # lastDiagCnMCI = np.logical_or(lastDiag == CN, lastDiag == MCI)
-    # filterMask = np.logical_and(atLeastTwoTimeptsInAdni1Mask, lastDiagCnMCI)
-    # filterMask = np.logical_and(filterMask, atLeastOneTimeptInAdniGo2Mask)
-    #
-    # potentialRIDsLB2 = unqRids[filterMask]
-    # lastDiag = lastDiag[filterMask]
-    # nrPotRIDs = potentialRIDsLB2.shape[0]
-    # potRIDsCN = potentialRIDsLB2[lastDiag == CN]
-    # potRIDsMCI = potentialRIDsLB2[lastDiag == MCI]
-    #
-    # # now take the potential RIDs and sample 2/3 of data for training
-    # nrCN = int(potRIDsCN.shape[0]/1.5)
-    # nrMCI = int(potRIDsMCI.shape[0]/1.5)
-    # selectedRIDsCN = np.random.choice(potRIDsCN, nrCN)
-    # selectedRIDsMCI = np.random.choice(potRIDsMCI, nrMCI)
-    # selectedRIDs = np.concatenate((selectedRIDsCN, selectedRIDsMCI), axis=0)
-    # nrSelRIDs = selectedRIDs.shape[0]
-    #
-    # LB2 = np.zeros(mergeAllPlus.shape[0], int)
-    # LB4 = np.zeros(mergeAllPlus.shape[0], int)
-    #
-    # for s in range(nrSelRIDs):
-    #   # for the current subject s, set all the visits in ADNI1 to be in LB2
-    #   maskCurrSubjADNI1 = np.logical_and(mergeAll[:, ridInd] == selectedRIDs[s], mergeAll[:, adniSetInd] == b'ADNI1')
-    #   LB2[maskCurrSubjADNI1] = 1
-    #
-    #   # for the current subject s, set all the visits in ADNIGO/2 to be in LB4
-    #   maskCurrSubjADNIGO2 = np.logical_and(mergeAll[:, ridInd] == selectedRIDs[s], adniGOor2Mask)
-    #   LB4[maskCurrSubjADNIGO2] = 1
-    #
-    # # set LB1 to be all other subjects not included in LB2 and LB4
-    # notLB2orLB4Mask = np.logical_not(np.logical_or(LB2 == 1, LB4 == 1))
-    # ridNotSelectedMask = np.logical_not(np.in1d(mergeAll[:, ridInd], selectedRIDs))
-    # LB1 = ridNotSelectedMask.astype(int)
-    
     nrRowsMergeAll = mergeAllPlus.shape[0]
     for r in range(nrRowsMergeAll):
       nrVisits = np.sum(mergeAll[:,ridInd] == mergeAll[r,ridInd])
@@ -1143,14 +1064,9 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
       binaryInd = np.logical_and(rowsArray[:,0] == mergeAll[r,ridInd],
         rowsArray[:, 1] == mergeAll[r, visCodeInd])
       indexInRowsArray = np.where(binaryInd)[0]
-      # print('indexInRowsArray', indexInRowsArray)
       assert indexInRowsArray.shape[0] == 1
       mergeAllPlus[r, 4] = isInD1 # D1
       mergeAllPlus[r, 5] = rowsArray[indexInRowsArray[0]][2] # D2
-      
-      # mergeAllPlus[r, 6] = LB1[r] # LB1
-      # mergeAllPlus[r, 7] = LB2[r] # LB2
-      # mergeAllPlus[r, 8] = LB4[r] # LB4
   
   # add entries also in the dictionary
   nrRowsSoFar = dictAll.shape[0]
@@ -1239,7 +1155,6 @@ def performChecks(tadpoleDF, ssDF, otherSSfile, otherSSvisCodeStr, ssNameTag, ig
     maskIdxInTadpoleDF = np.logical_and(tadpoleDF['RID'] == ssDF['RID'][r],
                                         tadpoleDF['VISCODE'] == otherSSViscodeCurr)
     if np.where(maskIdxInTadpoleDF)[0].shape[0] == 0:
-      print(otherSSViscodeCurr)
       if isinstance(otherSSViscodeCurr, float) and np.isnan(otherSSViscodeCurr):
         continue
       else:
@@ -1260,15 +1175,8 @@ def performChecks(tadpoleDF, ssDF, otherSSfile, otherSSvisCodeStr, ssNameTag, ig
 
         raise ValueError('more than one column matches ... or no col matches')
       matchColNameTadpoleDF = colListTadpoleDF[matchColNameTadpoleDFInd[0]]
-      # print('tadpoleDF[matchColNameTadpoleDF][matchIndexInTadpoleDF]', tadpoleDF[matchColNameTadpoleDF][matchIndexInTadpoleDF])
       valTadpoleDF = tadpoleDF[matchColNameTadpoleDF][matchIndexInTadpoleDF]
       valOtherSS = ssDF[colListOtherSS[c]][r]
-      # print('valTadpoleDF', valTadpoleDF)
-      # print('valOtherSS', valOtherSS)
-      # bothAreNan = (np.isnan(valTadpoleDF) or np.isnan(valOtherSS))
-
-      # if isinstance(valOtherSS, float) and np.floor(valOtherSS) == valOtherSS:
-      #   valOtherSS = int(valOtherSS)
 
       try:
         valTadpoleDF = float(valTadpoleDF)
@@ -1284,11 +1192,6 @@ def performChecks(tadpoleDF, ssDF, otherSSfile, otherSSvisCodeStr, ssNameTag, ig
       valOtherSSIntOrFloat =  isinstance(valOtherSS, float) or isinstance(valOtherSS, int)
       notFloatsAndAlmostEq = not (valTadpoleDFIntOrFloat and valOtherSSIntOrFloat and
                                   (np.abs(valOtherSS - valTadpoleDF) < 0.000001))
-
-      # if isinstance(valTadpoleDF, float) :
-      #   valTadpoleDF = float(valTadpoleDF)
-      #   print('valTadpoleDF float',valTadpoleDF)
-      #   print(dadsa)
 
       oldValTadpoleDF = valTadpoleDF
       oldValOtherSS = valOtherSS
@@ -1343,11 +1246,7 @@ def checkDatasets(df):
 
   dfREG_table = df.merge(REGISTRY_table, 'left', left_on=['RID', 'VISCODE'], right_on=['RID', 'VISCODE2'])
 
-  print(dfREG_table.columns)
   ridNotOk = []
-
-  # dfREG_table.reset_index(drop=True, inplace=True)
-  # dfREG_table = dfREG_table.iloc[(dfREG_table['Phase'] == 'ADNI2').values]
 
   dfREG_table.sort_values(by=['RID', 'EXAMDATE_x'],
     ascending=[True,True], inplace=True)
@@ -1375,30 +1274,20 @@ def checkDatasets(df):
   print('unqRIDnotOk', unqRIDnotOk) # should only show 1148, but that is only due to misalignment in the
   # checking function between the tables.
 
-  # check LB2.
-  # 1. all subjects should be CN or MCI at last ADNI1 visit
-  # 2. and have at least two scans in ADNI1
-  adni1Mask = df['COLPROT'] == 'ADNI1'
-  lb2RID = np.unique(df['RID'][df['LB2'] == 1])
-  nrLB2RID = lb2RID.shape[0]
-  ctlMCciDxchange = [1.0, 7.0, 9.0, 2.0, 4.0, 8.0]
-  for r in range(nrLB2RID):
-    adni1VisitsMaskCurr = np.logical_and(df['RID'] == lb2RID[r], adni1Mask)
-    if np.sum(adni1VisitsMaskCurr) < 2:
-      print('subject in LB2 has less than two scans in ADNI1: RID ', lb2RID[r])
+def checkSpreadsheetsExist(spreadsheetList, d2File):
+  missingSS = []
+  for s in spreadsheetList:
+    if not os.path.isfile(s):
+      missingSS += [s]
 
-    examDateListCurr = [i for i in df['EXAMDATE'][adni1VisitsMaskCurr]]
-    dxChangeListCurr = [i for i in df['DXCHANGE'][adni1VisitsMaskCurr]]
-    # print('examDateListCurr', examDateListCurr)
-    orderOfVisits = np.argsort(examDateListCurr)
-    dxChangeOrdCurr = [dxChangeListCurr[i] for i in orderOfVisits if not np.isnan(dxChangeListCurr[i])]
-    diagLastADNI1VisitCurr = dxChangeOrdCurr[-1]
-    if not np.in1d(diagLastADNI1VisitCurr, ctlMCciDxchange):
-      print('subject in LB2 desnt have CN or MCI diag:', lb2RID[r], diagLastADNI1VisitCurr, dxChangeListCurr)
+  if len(missingSS) != 0:
+    print('\nERROR 1: The following required spreadsheets could not be found:\n\t *', '\n\t * '.join(missingSS), '\n')
 
-  # check LB4. check if these visits are all in ADNI GO/2
-  # print(df['COLPROT'][df['LB4'] == 1])
-  assert np.in1d(df['COLPROT'][df['LB4'] == 1], ['ADNIGO', 'ADNI2']).all()
+  if not os.path.isfile(d2File):
+    print('\n\nERROR 2: D2 column file ', d2File, ' could not be found. You need to first generate it using the MATLAB script TADPOLE_D2.m\n\n')
+
+  if len(missingSS) != 0 or (not os.path.isfile(d2File)):
+    raise ValueError('Several spreadsheets are missing')
 
 # print(args.runPart)
 if args.runPart == 0:
@@ -1447,70 +1336,61 @@ csfDict = '%s/UPENNBIOMK9_DICT_04_19_17.csv' % args.spreadsheetFolder
 
 d2File = '%s/TADPOLE_D2_column.csv' % args.spreadsheetFolder
 
+spreadsheetList = [adniMergeFile, adniMergeDict, diagFile, mriADNI1FileFSL, mriADNI1DictFSL, mriADNI2FileFSL,
+  mriADNI2DictFSL, mriADNI1FileFSX, mriADNI1DictFSX, mriADNI2FileFSX, mriADNI2DictFSX, fdgPetFile, fdgPetDict,
+  av45File, av45Dict, av1451File, av1451Dict, dtiFile, dtiDict, csfFile, csfDict]
+checkSpreadsheetsExist(spreadsheetList, d2File)
+
 tadpoleFile = 'TADPOLE_D1_D2.csv'
 tadpoleDictFile = 'TADPOLE_D1_D2_Dict.csv'
 tadpolePart2File = 'TADPOLE_D1_D2_Part2.csv'
 
-if runPart[0] == 'R':
-  mergeAll, ridInd, ptidInd, visCodeInd, header, dictAll = loadADNIMerge(adniMergeFile, adniMergeDict)
+mergeAll, ridInd, ptidInd, visCodeInd, header, dictAll = loadADNIMerge(adniMergeFile, adniMergeDict)
 
-  mergeAll, header = changeDiagToLongit(diagFile, mergeAll, ridInd, ptidInd, visCodeInd,
-    header) # also modified header DX_bl ->DX_longitudinal
+mergeAll, header = changeDiagToLongit(diagFile, mergeAll, ridInd, ptidInd, visCodeInd,
+  header) # also modified header DX_bl ->DX_longitudinal
 
-  # Longitudinal FreeSurfer
-  mergeAll, header = appendMRIADNI1FSL(mriADNI1FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header)
-  # print(ads)
-  mergeAll, header, dictAll = appendMRIADNI2FSL(mriADNI2FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header, mriADNI1FileFSL, mriADNI1DictFSL, dictAll)
+# Longitudinal FreeSurfer
+mergeAll, header = appendMRIADNI1FSL(mriADNI1FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header)
+# print(ads)
+mergeAll, header, dictAll = appendMRIADNI2FSL(mriADNI2FileFSL, mergeAll, ridInd, ptidInd, visCodeInd, header, mriADNI1FileFSL, mriADNI1DictFSL, dictAll)
 
-  # Cross-sectional FreeSurfer
-  mergeAll, header = appendMriADNI1FSX(mriADNI1FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header)
+# Cross-sectional FreeSurfer
+mergeAll, header = appendMriADNI1FSX(mriADNI1FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header)
 
-  mergeAll, header, dictAll = appendMriADNI2FSX(mriADNI2FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header,
-                                                mriADNI1FileFSX, mriADNI1DictFSX, dictAll)
+mergeAll, header, dictAll = appendMriADNI2FSX(mriADNI2FileFSX, mergeAll, ridInd, ptidInd, visCodeInd, header,
+                                              mriADNI1FileFSX, mriADNI1DictFSX, dictAll)
 
-  mergeAll, header, dictAll = appendFdgPet(fdgPetFile, mergeAll, ridInd, ptidInd, visCodeInd, header, fdgPetDict,
-                                           dictAll)
+mergeAll, header, dictAll = appendFdgPet(fdgPetFile, mergeAll, ridInd, ptidInd, visCodeInd, header, fdgPetDict,
+                                         dictAll)
 
-  mergeAll, header, dictAll = appendAv45Pet(av45File, mergeAll, ridInd, ptidInd, visCodeInd, header, av45Dict, dictAll)
+mergeAll, header, dictAll = appendAv45Pet(av45File, mergeAll, ridInd, ptidInd, visCodeInd, header, av45Dict, dictAll)
 
-  mergeAll, header, dictAll = appendAv1451Pet(av1451File, mergeAll, ridInd, ptidInd, visCodeInd, header, av1451Dict,
-                                              dictAll)
+mergeAll, header, dictAll = appendAv1451Pet(av1451File, mergeAll, ridInd, ptidInd, visCodeInd, header, av1451Dict,
+                                            dictAll)
 
-  # don't use PIB as there are only around 200 entries in the spreadsheet, and is only available for ADNI1.
-  # pibFile = 'MRI/PIBPETSUVR.csv'
-  # mergeAll, header = appendAv45Pet(pibFile, mergeAll, ridInd, ptidInd, visCodeInd, header)
+# don't use PIB as there are only around 200 entries in the spreadsheet, and is only available for ADNI1.
+# pibFile = 'MRI/PIBPETSUVR.csv'
+# mergeAll, header = appendAv45Pet(pibFile, mergeAll, ridInd, ptidInd, visCodeInd, header)
 
-  mergeAll, header, dictAll = appendDTI(dtiFile, mergeAll, ridInd, ptidInd, visCodeInd, header, dtiDict, dictAll)
+mergeAll, header, dictAll = appendDTI(dtiFile, mergeAll, ridInd, ptidInd, visCodeInd, header, dtiDict, dictAll)
 
-  mergeAll, header, dictAll = appendCSF(csfFile, mergeAll, ridInd, ptidInd, visCodeInd, header, csfDict, dictAll)
+mergeAll, header, dictAll = appendCSF(csfFile, mergeAll, ridInd, ptidInd, visCodeInd, header, csfDict, dictAll)
 
-  dataStruct = dict(mergeAll=mergeAll, ridInd=ridInd, ptidInd=ptidInd, visCodeInd=visCodeInd,
-    header=header, dictAll=dictAll)
-  pickle.dump(dataStruct, open(mergePlusFileP1, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
-elif runPart[0] == 'L':
-  dataStruct = pickle.load(open(mergePlusFileP1, 'rb'))
-  mergeAll = dataStruct['mergeAll']
-  ridInd = dataStruct['ridInd']
-  ptidInd = dataStruct['ptidInd']
-  visCodeInd = dataStruct['visCodeInd']
-  header = dataStruct['header']
-  dictAll = dataStruct['dictAll']
+mergeAll, header, dictAll = addDcolumns(d2File, mergeAll, ridInd, ptidInd, visCodeInd, header, dictAll)
 
-if runPart[1] == 'R':
-  mergeAll, header, dictAll = addDcolumns(d2File, mergeAll, ridInd, ptidInd, visCodeInd, header, dictAll)
+assert len(header) == mergeAll.shape[1]
 
-  assert len(header) == mergeAll.shape[1]
+with open(tadpoleFile, 'w') as f:
+  f.write(','.join(header) + '\n')
+  for r in range(mergeAll.shape[0]):
+    f.write(','.join([decodeIfBinary(mergeAll[r, c]) for c in range(mergeAll.shape[1])]))
+    f.write('\n')
 
-  with open(tadpoleFile, 'w') as f:
-    f.write(','.join(header) + '\n')
-    for r in range(mergeAll.shape[0]):
-      f.write(','.join([decodeIfBinary(mergeAll[r, c]) for c in range(mergeAll.shape[1])]))
-      f.write('\n')
-
-  with open(tadpoleDictFile, 'w') as f:
-    for r in range(dictAll.shape[0]):
-      f.write(','.join(['"%s"' % decodeIfBinary(dictAll[r, c]) for c in range(dictAll.shape[1])]))
-      f.write('\n')
+with open(tadpoleDictFile, 'w') as f:
+  for r in range(dictAll.shape[0]):
+    f.write(','.join(['"%s"' % decodeIfBinary(dictAll[r, c]) for c in range(dictAll.shape[1])]))
+    f.write('\n')
 
 
 ######### Perform checks ###################
@@ -1569,5 +1449,5 @@ if args.runChecks:
   ssDF = pd.read_csv(mriADNI1FileFSX)
   adniMergeDF = pd.read_csv(adniMergeFile)
   checkFSXvalsAgainstADNIMERGE(tadpoleDF, mriADNI1FileFSX, otherSSvisCodeStr = 'VISCODE', ssNameTag = ssNameTag)
-
+  # the reason why entries above don't match is because UCSFFSX has duplicate entries for the same subject and viscode.
 
