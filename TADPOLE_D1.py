@@ -63,6 +63,9 @@ parser.add_argument('--cellWidth', dest='cellWidth', default='100',type=int,
 parser.add_argument('--runScripts', dest='runScripts', default='1',type=int,
                    help='whether to also run TADPOLE_D2.py and TADPOLE_D3.py. Only used by developers')
 
+parser.add_argument('--runChecks', dest='runChecks', default='0',type=int,
+                   help='whether to run sanity checks on the dataset. Only used by developers')
+
 CN = 1
 MCI = 2
 AD = 3
@@ -1381,16 +1384,28 @@ def checkFSXvalsAgainstADNIMERGE(tadpoleDF, mriADNI1FileFSX, otherSSvisCodeStr, 
     colListOtherSS = list(ssDF.columns.values)
     colListTadpoleDF = list(tadpoleDF.columns.values)
 
+    # mapping = {'nan': -10, '': -1}
+    # tadpoleDF.replace({'Hippocampus': mapping, 'ST29SV%s' % ssNameTag: mapping, 'ST88SV%s' % ssNameTag: mapping}, inplace=True)
+    tadpoleDF[['Hippocampus', 'ST29SV%s' % ssNameTag, 'ST88SV%s' % ssNameTag]] = \
+      tadpoleDF[['Hippocampus', 'ST29SV%s' % ssNameTag, 'ST88SV%s' % ssNameTag]].apply(pd.to_numeric, errors='coerce')
+
+
+    tadpoleDF['HIPPOSUM'] = tadpoleDF['ST29SV%s' % ssNameTag] + tadpoleDF['ST88SV%s' % ssNameTag]
     for r in range(nrRows):
-      valsAllNan = np.isnan(tadpoleDF['Hippocampus'][r]) and np.isnan(tadpoleDF['ST29SV%s' % ssNameTag][r]) and \
-                   np.isnan(tadpoleDF['ST88SV%s' % ssNameTag][r])
-      if valsAllNan:
+
+      valsNan = np.isnan(tadpoleDF['Hippocampus'][r]) or (np.isnan(tadpoleDF['ST29SV%s' % ssNameTag][r]) and \
+                   np.isnan(tadpoleDF['ST88SV%s' % ssNameTag][r]))
+      if valsNan:
         continue
-      valsNotEq = float(tadpoleDF['Hippocampus'][r]) != (float(tadpoleDF['ST29SV%s' % ssNameTag][r]) + float(tadpoleDF['ST88SV%s' % ssNameTag][r]))
+
+      valsNotEq = tadpoleDF['Hippocampus'][r] != (tadpoleDF['ST29SV%s' % ssNameTag][r] + tadpoleDF['ST88SV%s' % ssNameTag][r])
       if valsNotEq:
-        print('entries dont match ', tadpoleDF['RID'][r], tadpoleDF['VISCODE'][r],
-              float(tadpoleDF['Hippocampus'][r]),
-              (float(tadpoleDF['ST29SV%s' % ssNameTag][r]) + float(tadpoleDF['ST88SV%s' % ssNameTag][r])))
+        # import pdb
+        # pdb.set_trace()
+        print('entries dont match\n ', tadpoleDF[['RID','VISCODE', 'Hippocampus', 'ST29SV%s' % ssNameTag,\
+          'ST88SV%s' % ssNameTag, 'HIPPOSUM']].iloc[r])
+
+    # Conclusion: the reason why entries don't match is because UCSFFSX has duplicate entries for the same subject and viscode.
 
     # print(tadpoleDF['Hippocampus'] - (tadpoleDF['ST29SV%s' % ssNameTag] + tadpoleDF['ST88SV%s' % ssNameTag]))
     # assert (tadpoleDF['Hippocampus'] == (tadpoleDF['ST29SV%s' % ssNameTag] + tadpoleDF['ST88SV%s' % ssNameTag])).all()
@@ -1779,9 +1794,10 @@ if performChecksFlag:
 
   checkDatasets(tadpoleDF)
 
-ssNameTag = '_%s_%s' % (mriADNI1FileFSX[:-4].split('/')[-1], mriADNI2FileFSX[:-4].split('/')[-1])
-ssDF = pd.read_csv(mriADNI1FileFSX)
-adniMergeDF = pd.read_csv(adniMergeFile)
-checkFSXvalsAgainstADNIMERGE(tadpoleDF, mriADNI1FileFSX, otherSSvisCodeStr = 'VISCODE', ssNameTag = ssNameTag)
+if args.runChecks:
+  ssNameTag = '_%s_%s' % (mriADNI1FileFSX[:-4].split('/')[-1], mriADNI2FileFSX[:-4].split('/')[-1])
+  ssDF = pd.read_csv(mriADNI1FileFSX)
+  adniMergeDF = pd.read_csv(adniMergeFile)
+  checkFSXvalsAgainstADNIMERGE(tadpoleDF, mriADNI1FileFSX, otherSSvisCodeStr = 'VISCODE', ssNameTag = ssNameTag)
 
 
