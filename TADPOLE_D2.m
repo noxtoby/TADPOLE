@@ -232,10 +232,12 @@ table_D2_D3_columns.M = str2double(strrep(strrep(table_D2_D3_columns.VISCODE,'bl
   table_D2_D3_columns.D3 = 1*(MostRecentVisit==1 & table_D2_D3_columns.D2);
   table_D2_D3_columns.M = [];
   
-  %writetable(table_D2_D3_columns,fullfile(dataSaveLocation,sprintf('TADPOLE_D2_D3_columns_MATLAB_%s.csv',runDate)))
   table_D2_column = table_D2_D3_columns;
   table_D2_column.D3 = [];
-  writetable(table_D2_column,fullfile(dataSaveLocation,'TADPOLE_D2_column.csv'))
+  if writeTables
+    writetable(table_D2_D3_columns,fullfile(dataSaveLocation,sprintf('TADPOLE_D2_D3_columns_MATLAB_%s.csv',runDate)))
+    writetable(table_D2_column,fullfile(dataSaveLocation,'TADPOLE_D2_column.csv'))
+  end
 
 
 
