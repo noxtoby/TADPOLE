@@ -162,7 +162,6 @@ if __name__ == '__main__':
     
     #*** Active, passed screening, etc.
     REGISTRY_file = os.path.join(args.spreadsheetFolder,'REGISTRY.csv')
-    ROSTER_file   = os.path.join(args.spreadsheetFolder,'ROSTER.csv')
     #*** specifics on EMCI/LMCI/etc
     ARM_file = os.path.join(args.spreadsheetFolder,'ARM.csv')
     DXSUM_file = os.path.join(args.spreadsheetFolder,'DXSUM_PDXCONV_ADNIALL.csv')
