@@ -154,90 +154,97 @@ def representsInt(s):
     except ValueError:
         return False
 
-#********************************************************************#
-if __name__ == '__main__':
-    # runDate = datetime.now().strftime("%Y%m%d")
-    dataSaveLocation = os.getcwd()
-    dataLocation = os.getcwd()
-    
-    #*** Active, passed screening, etc.
-    REGISTRY_file = os.path.join(args.spreadsheetFolder,'REGISTRY.csv')
-    #*** specifics on EMCI/LMCI/etc
-    ARM_file = os.path.join(args.spreadsheetFolder,'ARM.csv')
-    DXSUM_file = os.path.join(args.spreadsheetFolder,'DXSUM_PDXCONV_ADNIALL.csv')
-    
-    #*** ADNI tables
-    REGISTRY_table = pd.read_csv(REGISTRY_file)
-    ARM_table = pd.read_csv(ARM_file)
-    DXSUM_table = pd.read_csv(DXSUM_file)
-    
-    #*** ADNI preliminaries from training slides part 2 PDF document
-    DXSUM_table = generateDXCHANGE(DXSUM_table)
-    DXARM_table = mergeDX_ARM(DXSUM_table,ARM_table)
-    DXARM_table = assignBaselineDX(DXARM_table)
-    DXARMREG_table = pd.merge(DXARM_table[['RID','Phase','VISCODE','VISCODE2','DXCHANGE','ARM','ENROLLED','baselineDX']],
-      REGISTRY_table[['RID','Phase','VISCODE','EXAMDATE','PTSTATUS','RGCONDCT','RGSTATUS','VISTYPE']]
-      ,'left',on=['RID','Phase','VISCODE'])
-    
-    ##### Go from here
-    
+def activeAtMostRecentVisit(REGISTRY_table):
+    """
+    Identifies most recent visit per participant, per Phase
+    """
     #*** Identify most recent active visit for each participant, in each ADNI Phase
     ActiveVisits_ADNIGO2 = (REGISTRY_table['PTSTATUS'] == 1).values
     VisitConducted_ADNI1 = (REGISTRY_table['RGCONDCT'] == 1).values
-    ADNI1 = (REGISTRY_table['Phase'] == 'ADNI1').values
-    ADNIGO = (REGISTRY_table['Phase'] == 'ADNIGO').values
-    ADNI2 = (REGISTRY_table['Phase'] == 'ADNI2').values
+    ADNI1  = np.logical_and((REGISTRY_table['Phase'] == 'ADNI1').values, (REGISTRY_table['RGCONDCT'] == 1).values)
+    ADNIGO = np.logical_and((REGISTRY_table['Phase'] == 'ADNIGO').values,(REGISTRY_table['RGSTATUS'] == 1).values)
+    ADNI2  = np.logical_and((REGISTRY_table['Phase'] == 'ADNI2').values, (REGISTRY_table['RGSTATUS'] == 1).values)
     #* Identify most recent visit using largest Month (from VISCODE2)
     month = REGISTRY_table['VISCODE2'].str.replace('scmri','0').str.replace('m','').str.replace('bl','0').str.replace('sc','0')
     Month = np.array([int(m) if type(m)==str and m!='f' and m!='uns1' else None for m in month])
-    RID_num = REGISTRY_table.RID.values
+    MonthIsNone = np.array([m is None for m in Month]) # Used to avoid errors in the for-loop below
+    RID = REGISTRY_table.RID.values
     PTSTATUS = REGISTRY_table.PTSTATUS
-    RID_num_u = np.unique(RID_num)
+    RID_u = np.unique(RID)
     MostRecentVisit_ADNI1  = np.zeros((REGISTRY_table.shape[0],1))
     MostRecentVisit_ADNIGO = np.zeros((REGISTRY_table.shape[0],1))
     MostRecentVisit_ADNI2  = np.zeros((REGISTRY_table.shape[0],1))
     InactiveAtAnyVisit     = np.zeros((REGISTRY_table.shape[0],1))
-    for ki in range(0,len(RID_num_u)):
-        rowz = RID_num==RID_num_u[ki]
-        #* Most recent visit, per study phase
-        rowz_ADNI1 = ADNI1 & rowz
-        rowz_ADNIGO = ADNIGO & rowz
-        rowz_ADNI2 = ADNI2 & rowz
+    for ki in range(0,len(RID_u)):
+        # All visits for this participant
+        rowz = RID==RID_u[ki]
+        #* Separate by ADNI Phase
+        rowz_ADNI1  = rowz & ADNI1
+        rowz_ADNIGO = rowz & ADNIGO
+        rowz_ADNI2  = rowz & ADNI2
         visitz_ADNI1     = Month[rowz_ADNI1]
         ptstatusz_ADNI1  = PTSTATUS[rowz_ADNI1]
-        if visitz_ADNI1.size>1:
+        if not all(MonthIsNone[rowz_ADNI1]):
             mostRecentVisit_ADNI1 = visitz_ADNI1==max(visitz_ADNI1)
             rowz_ADNI1 = np.where(rowz_ADNI1)[0]
             MostRecentVisit_ADNI1[rowz_ADNI1[mostRecentVisit_ADNI1]] = 1
         visitz_ADNIGO    = Month[rowz_ADNIGO]
         ptstatusz_ADNIGO = PTSTATUS[rowz_ADNIGO]
-        if visitz_ADNIGO.size>1:
+        if not all(MonthIsNone[rowz_ADNIGO]):
             mostRecentVisit_ADNIGO = visitz_ADNIGO==max(visitz_ADNIGO)
             rowz_ADNIGO = np.where(rowz_ADNIGO)[0]
             MostRecentVisit_ADNIGO[rowz_ADNIGO[mostRecentVisit_ADNIGO]] = 1
         visitz_ADNI2     = Month[rowz_ADNI2]
         ptstatusz_ADNI2  = PTSTATUS[rowz_ADNI2]
-        if visitz_ADNI2.size>1:
+        if not all(MonthIsNone[rowz_ADNI2]):
             mostRecentVisit_ADNI2 = visitz_ADNI2==max(visitz_ADNI2)
             rowz_ADNI2 = np.where(rowz_ADNI2)[0]
             MostRecentVisit_ADNI2[rowz_ADNI2[mostRecentVisit_ADNI2]] = 1
     
         ptstatusz  = PTSTATUS[rowz]
-        if any(ptstatusz==2):
+        if any(ptstatusz_ADNI1==2) or any(ptstatusz_ADNIGO==2) or any(ptstatusz_ADNI2==2):
             InactiveAtAnyVisit[rowz] = 1
-    
+
     #* Identify those who are active at their final visit
-    ActiveAtMostRecentVisit_ADNI1  = np.logical_and(MostRecentVisit_ADNI1.flatten()==1 ,VisitConducted_ADNI1  ,InactiveAtAnyVisit.flatten()==0)
-    ActiveAtMostRecentVisit_ADNIGO = np.logical_and(MostRecentVisit_ADNIGO.flatten()==1,ActiveVisits_ADNIGO2,InactiveAtAnyVisit.flatten()==0)
-    ActiveAtMostRecentVisit_ADNI2  = np.logical_and(MostRecentVisit_ADNI2.flatten()==1 ,ActiveVisits_ADNIGO2,InactiveAtAnyVisit.flatten()==0)
-    
-    RID_ActiveAtMostRecentVisit_ADNI1  = REGISTRY_table.RID[ActiveAtMostRecentVisit_ADNI1]
-    RID_ActiveAtMostRecentVisit_ADNIGO = REGISTRY_table.RID[ActiveAtMostRecentVisit_ADNIGO]
-    RID_ActiveAtMostRecentVisit_ADNI2  = REGISTRY_table.RID[ActiveAtMostRecentVisit_ADNI2]
-    
-    print('--- Active status at final visit (ADNI1: RGCONDUCT==1; ADNIGO/2: PTSTATUS==1, and never inactive)')
-    print('--- Found {0} ADNI1 participants\n---       {1} ADNIGO participants\n---       {2} ADNI2 participants\n'.format(len(RID_ActiveAtMostRecentVisit_ADNI1),len(RID_ActiveAtMostRecentVisit_ADNIGO),len(RID_ActiveAtMostRecentVisit_ADNI2)))
-    
+    ActiveAtMostRecentVisit_ADNI1  = np.logical_and( MostRecentVisit_ADNI1.flatten() ,VisitConducted_ADNI1 ) 
+    ActiveAtMostRecentVisit_ADNI1  = np.logical_and(ActiveAtMostRecentVisit_ADNI1, np.logical_not(InactiveAtAnyVisit.flatten()==1) )
+
+    ActiveAtMostRecentVisit_ADNIGO = np.logical_and( MostRecentVisit_ADNIGO.flatten(),ActiveVisits_ADNIGO2 ) , np.logical_not(InactiveAtAnyVisit.flatten()==1) )
+    ActiveAtMostRecentVisit_ADNI2  = np.logical_and( np.logical_and( MostRecentVisit_ADNI2.flatten() ,ActiveVisits_ADNIGO2 ) , np.logical_not(InactiveAtAnyVisit.flatten()==1) )
+
+    return ( ActiveAtMostRecentVisit_ADNI1, ActiveAtMostRecentVisit_ADNIGO, ActiveAtMostRecentVisit_ADNI2 ) 
+
+#********************************************************************#
+if __name__ == '__main__':
+    # runDate = datetime.now().strftime("%Y%m%d")
+    dataSaveLocation = os.getcwd()
+    dataLocation = os.getcwd()
+
+    #*** Active, passed screening, etc.
+    REGISTRY_file = os.path.join(args_spreadsheetFolder,'REGISTRY.csv')
+    #*** specifics on EMCI/LMCI/etc
+    ARM_file = os.path.join(args_spreadsheetFolder,'ARM.csv')
+    DXSUM_file = os.path.join(args_spreadsheetFolder,'DXSUM_PDXCONV_ADNIALL.csv')
+
+    #*** ADNI tables
+    REGISTRY_table = pd.read_csv(REGISTRY_file)
+    ARM_table = pd.read_csv(ARM_file)
+    DXSUM_table = pd.read_csv(DXSUM_file)
+
+    #*** ADNI preliminaries from training slides part 2 PDF document
+    DXSUM_table = generateDXCHANGE(DXSUM_table)
+    DXARM_table = mergeDX_ARM(DXSUM_table,ARM_table)
+    DXARM_table = assignBaselineDX(DXARM_table)
+    DXARMREG_table = pd.merge(DXARM_table[['RID','Phase','VISCODE','VISCODE2','DXCHANGE','ARM','ENROLLED','baselineDX']],REGISTRY_table[['RID','Phase','VISCODE','EXAMDATE','PTSTATUS','RGCONDCT','RGSTATUS','VISTYPE']],'left',on=['RID','Phase','VISCODE'])
+
+    #*** Identify most recent visit per participant, per Phase
+(ActiveAtMostRecentVisit_ADNI1,ActiveAtMostRecentVisit_ADNIGO,ActiveAtMostRecentVisit_ADNI2) = activeAtMostRecentVisit(REGISTRY_table)
+RID_ActiveAtMostRecentVisit_ADNI1  = REGISTRY_table.RID[ActiveAtMostRecentVisit_ADNI1]
+RID_ActiveAtMostRecentVisit_ADNIGO = REGISTRY_table.RID[ActiveAtMostRecentVisit_ADNIGO]
+RID_ActiveAtMostRecentVisit_ADNI2  = REGISTRY_table.RID[ActiveAtMostRecentVisit_ADNI2]
+print('--- Active status at final visit (ADNI1: RGCONDUCT==1; ADNIGO/2: PTSTATUS==1, and never inactive)')
+print('--- Found {0} ADNI1 participants\n---       {1} ADNIGO participants\n---       {2} ADNI2 participants\n'.format(len(RID_ActiveAtMostRecentVisit_ADNI1),len(RID_ActiveAtMostRecentVisit_ADNIGO),len(RID_ActiveAtMostRecentVisit_ADNI2)))
+
     #*** Report numbers by diagnosis
     BaselineDX_ADNI1  = DXARMREG_table[['RID','baselineDX']][np.logical_and(ismember(DXARMREG_table.RID,RID_ActiveAtMostRecentVisit_ADNI1.values) , DXARMREG_table.Phase=='ADNI1')]
     BaselineDX_ADNIGO = DXARMREG_table[['RID','baselineDX']][np.logical_and(ismember(DXARMREG_table.RID,RID_ActiveAtMostRecentVisit_ADNIGO.values), DXARMREG_table.Phase=='ADNIGO')]
@@ -270,11 +277,11 @@ if __name__ == '__main__':
     # table_D2_D3_columns.M = str2double(strrep(strrep(table_D2_D3_columns.VISCODE,'bl','0'),'m',''));
     # % [table_D3_columns_sorted,I] = sortrows(table_D3_columns,{'RID','M'});
     #   %* Identify most recent visit
-    #   RID_num = str2double(table_D2_D3_columns.RID);
-    #   RID_num_u = unique(RID_num);
+    #   RID = str2double(table_D2_D3_columns.RID);
+    #   RID_u = unique(RID);
     #   MostRecentVisit = zeros(size(table_D2_D3_columns,1),1);
-    #   for ki=1:length(RID_num_u)
-    #     rowz = RID_num==RID_num_u(ki);
+    #   for ki=1:length(RID_u)
+    #     rowz = RID==RID_u(ki);
     #     %* Most recent visit
     #     visitz = table_D2_D3_columns.M(rowz);
     #     mostRecentVisit = visitz==max(visitz);
@@ -337,14 +344,14 @@ if __name__ == '__main__':
     # print('# in D2', D2_RID.shape[0])
 
     #*** TADPOLE D2: historical data for D2_RID
-    D1_file = '%s/ADNIMERGE.csv' %  args.spreadsheetFolder
+    D1_file = '%s/ADNIMERGE.csv' %  args_spreadsheetFolder
     D1_table = pd.read_csv(D1_file)
     D2_indicator = ismember(D1_table.RID.values,D2_RID)
     D2_indicator_numeric = 1*D2_indicator
     D2_ = D1_table[['RID','VISCODE']]
     D2 = D2_.assign(D2=D2_indicator_numeric)
 
-    D2_file = '%s/TADPOLE_D2_column.csv' % args.spreadsheetFolder # D2_file = 'TADPOLE_D2_column_{0}.csv'.format(runDate)
+    D2_file = '%s/TADPOLE_D2_column.csv' % args_spreadsheetFolder # D2_file = 'TADPOLE_D2_column_{0}.csv'.format(runDate)
     D2.to_csv(os.path.join(dataSaveLocation,D2_file),index=False)
 
     performCheck = True

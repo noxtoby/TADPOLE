@@ -1,7 +1,5 @@
-% TADPOLE_D2.m Identifying test subjects for TADPOLE challenge 2017
+% TADPOLE_D2.m Identifying prediction set D2 for TADPOLE challenge 2017
 % Neil Oxtoby, UCL, March 2017
-
-% July 2017 - renamed from ADPMC2017_testSet.m
 
 %* From the ADNI training slides (part 2, page 61), on how to identify
 %  ADNI2 subjects:
@@ -19,9 +17,10 @@
 writeTables = true;
 runDate = datestr(date,'yyyymmdd');
 
-dataLocation = '/Users/noxtoby/Documents/Research/UCLPOND/Projects/201612 POND challenge/Data/TADPOLE_D1_D2_D3';
-dataSaveLocation = '/Users/noxtoby/Documents/Research/UCLPOND/Projects/201612 POND challenge/Data/TADPOLE_D1_D2_D3/20170704_Checks';
+dataLocation = pwd; 
+dataSaveLocation = pwd;
 
+%* ADNI tables
 MAYOADIRL_MRI_MCH = fullfile(dataLocation, 'MAYOADIRL_MRI_MCH_09_15_16.csv'); % one row per MR finding
 REGISTRY = fullfile(dataLocation,'REGISTRY.csv');
 ADNI2_VISITID = fullfile(dataLocation,'ADNI2_VISITID.csv');
@@ -43,10 +42,6 @@ table_REGISTRY_ADNI2 =  table_REGISTRY(ADNI2,:);
 ADNI2_new_sc = ADNI2 & ismember(table_REGISTRY.VISCODE,{'v01'});
 ADNI2_new_bl = ADNI2 & ismember(table_REGISTRY.VISCODE,{'v03'});
 ADNI2_continuing = ADNI2 & ismember(table_REGISTRY.VISCODE,{'v06'});
-%* REGISTRY => identify ADNI3 participants
-ADNI3 = strcmpi(table_REGISTRY.Phase,'ADNI3') & strcmpi(table_REGISTRY.RGSTATUS,'1');
-fprintf('    Found %i ADNI3 visits.    \n',sum(ADNI3))
-table_REGISTRY_ADNI23 = table_REGISTRY(ADNI2 | ADNI3,:);
 %* REGISTRY => identify ADNI1 participants
 %*     (Leaderboard data: rollovers from ADNI1 into ADNIGO or ADNI2)
 ADNI1 = strcmpi(table_REGISTRY.Phase,'ADNI1');
@@ -55,11 +50,17 @@ table_REGISTRY_ADNI1 =  table_REGISTRY(ADNI1,:);
 ADNIGO = strcmpi(table_REGISTRY.Phase,'ADNIGO');
 table_REGISTRY_ADNIGO =  table_REGISTRY(ADNIGO,:);
 
+%* REGISTRY => identify ADNI3 participants
+ADNI3 = strcmpi(table_REGISTRY.Phase,'ADNI3') & strcmpi(table_REGISTRY.RGSTATUS,'1');
+%fprintf('    Found %i ADNI3 visits.    \n',sum(ADNI3))
+table_REGISTRY_ADNI23 = table_REGISTRY(ADNI2 | ADNI3,:);
+
 %% REGISTRY => Active at final visit
   ActiveVisits = strcmpi(table_REGISTRY.PTSTATUS,'1');
   VisitConducted_ADNI1 = strcmpi(table_REGISTRY.RGCONDCT,'1');
   %* Identify most recent visit
-  VISCODE2_num = str2double(strrep(strrep(table_REGISTRY.VISCODE2,'m',''),'bl','0'));
+  %VISCODE2_num = str2double(strrep(strrep(table_REGISTRY.VISCODE2,'m',''),'bl','0'));
+  VISCODE2_num = str2double(strrep(strrep(strrep(strrep(table_REGISTRY.VISCODE2,'scmri','0'),'m',''),'bl','0'),'sc','0'));
   RID_num = str2double(table_REGISTRY.RID);
   PTSTATUS = table_REGISTRY.PTSTATUS;
   RID_num_u = unique(RID_num);
@@ -69,13 +70,13 @@ table_REGISTRY_ADNIGO =  table_REGISTRY(ADNIGO,:);
   MostRecentVisit_ADNIGO = zeros(size(table_REGISTRY,1),1);
   MostRecentVisit_ADNI2 = zeros(size(table_REGISTRY,1),1);
   for ki=1:length(RID_num_u)
-    rowz = RID_num==RID_num_u(ki);
-    %* Most recent visit, per study phase
-    rowz_ADNI1 = ADNI1 & rowz;
-    rowz_ADNIGO = ADNIGO & rowz;
-    rowz_ADNI2 = ADNI2 & rowz;
-    visitz_ADNI1     = VISCODE2_num(rowz_ADNI1);
-    ptstatusz_ADNI1  = PTSTATUS(rowz_ADNI1);
+      rowz = RID_num==RID_num_u(ki);
+      %* Most recent visit, per study phase
+      rowz_ADNI1 = ADNI1 & rowz;
+      rowz_ADNIGO = ADNIGO & rowz;
+      rowz_ADNI2 = ADNI2 & rowz;
+      visitz_ADNI1     = VISCODE2_num(rowz_ADNI1);
+      ptstatusz_ADNI1  = PTSTATUS(rowz_ADNI1);
       mostRecentVisit_ADNI1 = visitz_ADNI1==max(visitz_ADNI1);
       rowz_ADNI1 = find(rowz_ADNI1);
       MostRecentVisit_ADNI1(rowz_ADNI1(mostRecentVisit_ADNI1)) = 1;
@@ -230,102 +231,13 @@ table_D2_D3_columns.M = str2double(strrep(strrep(table_D2_D3_columns.VISCODE,'bl
   end
   table_D2_D3_columns.D3 = 1*(MostRecentVisit==1 & table_D2_D3_columns.D2);
   table_D2_D3_columns.M = [];
-
-  writetable(table_D2_D3_columns,fullfile(dataSaveLocation,sprintf('TADPOLE_D2_D3_columns_MATLAB_%s.csv',runDate)))
-
-%% ************ Leaderboard data sets ************
-%% LB2
-% - prospective rollovers: ADNI1 to ADNIGO/2
-% - participants with multiple timepoints
-% - CN/MCI at final ADNI1 visit
-LB2_RID = BaselineDX_ADNI1_u.RID;
-LB2_0 = ismember(table_ADNIMERGE.RID,LB2_RID) & strcmpi(table_ADNIMERGE.COLPROT,'ADNI1');
-  %* At least 2 visits
-  nVisitsMin = 2;
-  VISCODE2_num = str2double(strrep(strrep(table_ADNIMERGE.VISCODE,'m',''),'bl','0'));
-  RID_num = str2double(table_ADNIMERGE.RID);
-  RID_num_u = unique(RID_num);
-  ADNI1_moreThanOneVisit = zeros(size(RID_num));
-  ADNI1_mostRecentVisit  = zeros(size(RID_num));
-  for ki=1:length(RID_num_u)
-    rowz = RID_num==RID_num_u(ki);
-    rowz = rowz & LB2_0; 
-    if sum(rowz)>=nVisitsMin
-      ADNI1_moreThanOneVisit(rowz) = 1;
-    end
-    visitz = VISCODE2_num(rowz);
-    %* Most recent visit
-    mostRecentVisit = visitz==max(visitz);
-    rowz_f = find(rowz);
-    ADNI1_mostRecentVisit(rowz_f(mostRecentVisit)) = 1;
+  
+  table_D2_column = table_D2_D3_columns;
+  table_D2_column.D3 = [];
+  if writeTables
+    writetable(table_D2_D3_columns,fullfile(dataSaveLocation,sprintf('TADPOLE_D2_D3_columns_MATLAB_%s.csv',runDate)))
+    writetable(table_D2_column,fullfile(dataSaveLocation,'TADPOLE_D2_column.csv'))
   end
-ADNI1_CNorMCIfinalvisit = ismember(table_ADNIMERGE.DX,{'NL','MCI','NL to MCI','MCI to NL','Dementia to MCI'}) & ADNI1_mostRecentVisit;
-ADNI1_2scans_CNorMCIfinalvisit_rolledOver = LB2_0 & ADNI1_moreThanOneVisit & ADNI1_CNorMCIfinalvisit;
-LB2 = ADNI1_2scans_CNorMCIfinalvisit_rolledOver;
-
-fprintf('\n - - - Leaderboards - - -\n')
-fprintf('\n - - - LB2 numbers: \n       LB2 - %i\n',sum(LB2))
-
-
-
-%% LB4: test set: LB2, post-ADNI1
-
-%% LB1: all remaining data: LB2, plus non-LB4
-
-
-
-% %% Leaderboard sets: same idea, but using ADNI1 rollovers
-% % ====== Raz's leaderboard method ======
-% % Selected all subjects with:
-% %  * at least two scans in ADNI1
-% %  * were either CN or MCI on the last clinical assessment
-% %  * were rollovers in ADNI GO/2
-% adniMerge_file = '/Users/noxtoby/Documents/Research/UCLPOND/Projects/201612 POND challenge/Data/ADNITables/ADNIMERGE.csv';
-% table_adniMerge = readtable(adniMerge_file,'Delimiter','comma','TreatAsEmpty',{''},'HeaderLines',0);
-% adni1Merge_ORIGPROT = strcmpi(table_adniMerge.ORIGPROT,'ADNI1');
-% adni1Merge_COLPROT = strcmpi(table_adniMerge.COLPROT,'ADNI1');
-% adni1Merge_rolledOver = adni1Merge_ORIGPROT & ~adni1Merge_COLPROT;
-%   %* At least 2 visits
-%   nVisitsMin = 2;
-%   VISCODE2_num = str2double(strrep(strrep(table_adniMerge.VISCODE,'m',''),'bl','0'));
-%   RID_num = str2double(table_adniMerge.RID);
-%   RID_num_u = unique(RID_num);
-%   ADNI1_moreThanOneVisit = zeros(size(adni1Merge_COLPROT));
-%   ADNI1_mostRecentVisit  = zeros(size(adni1Merge_COLPROT));
-%   for ki=1:length(RID_num_u)
-%     rowz = RID_num==RID_num_u(ki);
-%     rowz = rowz & adni1Merge_COLPROT;
-%     if sum(rowz)>=nVisitsMin
-%       ADNI1_moreThanOneVisit(rowz) = 1;
-%     end
-%     visitz = VISCODE2_num(rowz); %* ADNI1 only
-%     %* Most recent visit
-%     mostRecentVisit = visitz==max(visitz);
-%     rowz_f = find(rowz);
-%     ADNI1_mostRecentVisit(rowz_f(mostRecentVisit)) = 1;
-%   end
-% ADNI1_CNorMCIfinalvisit = ismember(table_adniMerge.DX,{'NL','MCI','NL to MCI','MCI to NL','Dementia to MCI'}) & ADNI1_mostRecentVisit;
-% ADNI1_2scans_CNorMCIfinalvisit_rolledOver = adni1Merge_rolledOver & ADNI1_moreThanOneVisit & ADNI1_CNorMCIfinalvisit;
-% % The above criteria yielded a set of 132 potential CN subjects and 101 potential MCI subjects
-% % I selected 2/3 of each group and assigned all ADNI1 visits to LB2
-% % I assigned all ADNI GO/2 visits for these subjects to LB4
-% % I assigned all the remaining subjects not included in LB2 or LB4 to LB1.
-% % 
-% % I pushed all the changes to the code and also attached the generated data (you can pull the code changes from github). I ran the following checks:
-% % compared the output of your Matlab-generated dataset with my python-generated one, and everything matches
-% % manually checked a few entries for X-sectional FS data
-% % manually checked some entries for the LB datasets
-% % wrote more comprehensive automatic checks (see below)
-% % 
-% % In particular, I also wrote some automatic concistency checks in TADPOLE_D1.py, which compare biomarker values between the TADPOLE dataset and each individual spreadsheet, for several subjects. I wrote some automatic checks also for the D1/D2/LB1-4 columns. Everything looks ok. 
-% % 
-% % What I haven't checked though is the D2_column and D3. It would be great if you could sanity check those, and also have another look on D1. Is there anything else we need to do? 
-% % 
-% % Finally, I am currently visiting NYC and will be flying back to London on Tuesday evening, so I won't make it for the POND meeting. You can reach me via email if you need help.
-% % 
-% % Regards,
-% % Raz
-
 
 
 
