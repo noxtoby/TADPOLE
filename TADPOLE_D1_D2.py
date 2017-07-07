@@ -740,7 +740,6 @@ def appendAv45Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, 
     
     nrColsToSkip = 3
     nrExtraCols = nrCols-nrColsToSkip # add one extra column for a tag saying 'Freesurfer ROIs'
-    currSpreadsheetTag = 'AV45_UCBERKLEY_10_17_16'
     
     nrColsSoFar = mergeAll.shape[1]
     
@@ -810,7 +809,6 @@ def appendAv1451Pet(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader
     
     nrColsToSkip = 3
     nrExtraCols = nrCols-nrColsToSkip # add one extra column for a tag saying 'Freesurfer ROIs'
-    currSpreadsheetTag = 'AV1451_UCBERKLEY_10_17_16'
     
     nrColsSoFar = mergeAll.shape[1]
     
@@ -880,14 +878,12 @@ def appendDTI(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
     
     nrColsToSkip = 3
     nrExtraCols = nrCols-nrColsToSkip # add one extra column for a tag describing the current spreadsheet
-    currSpreadsheetTag = 'DTIROI_04_30_14'
     
     nrColsSoFar = mergeAll.shape[1]
     
     mergeAllPlus = np.ndarray((mergeAll.shape[0], nrColsSoFar + nrExtraCols), dtype=dataType)
     mergeAllPlus[:,:] = b' '
     mergeAllPlus[:,:nrColsSoFar] = mergeAll
-    mergeAllPlus[:,nrColsSoFar] = str.encode(currSpreadsheetTag)
     
     for r in range(nrRows):
       currVisCode = rowsArray[r][2]
@@ -956,7 +952,6 @@ def appendCSF(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dict
     
     nrColsToSkip = 3
     nrExtraCols = nrCols-nrColsToSkip # add one extra column for a tag describing the current spreadsheet
-    currSpreadsheetTag = 'CSF_UPENNBIOMK9_04_19_17'
     
     nrColsSoFar = mergeAll.shape[1]
     
