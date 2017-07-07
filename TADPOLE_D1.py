@@ -36,7 +36,11 @@ parser = argparse.ArgumentParser(
     * UPENNBIOMK9_04_19_17.csv
     * UPENNBIOMK9_DICT_04_19_17.csv
 
-    The simplest way to run it is with python3 TADPOLE_D1.py. The script requires several python libraries, such as:
+    The simplest way to run it is with
+
+        python3 TADPOLE_D1.py
+
+    The script requires several python libraries, such as:
     numpy
     scipy
     subprocess
@@ -55,6 +59,9 @@ parser.add_argument('--runPart', dest='runPart', default='0',type=int,
 
 parser.add_argument('--cellWidth', dest='cellWidth', default='100',type=int,
                    help='decides the cell width, leave to default value. Only used by developers')
+
+parser.add_argument('--runScripts', dest='runScripts', default='1',type=int,
+                   help='whether to also run TADPOLE_D2.py and TADPOLE_D3.py. Only used by developers')
 
 CN = 1
 MCI = 2
@@ -1368,6 +1375,28 @@ def decodeIfBinary(s):
   else:
     return s.decode('utf-8')
 
+def checkFSXvalsAgainstADNIMERGE(tadpoleDF, mriADNI1FileFSX, otherSSvisCodeStr, ssNameTag,
+                                 ignoreMissingCols = False):
+    nrRows, nrCols = tadpoleDF.shape
+    colListOtherSS = list(ssDF.columns.values)
+    colListTadpoleDF = list(tadpoleDF.columns.values)
+
+    for r in range(nrRows):
+      valsAllNan = np.isnan(tadpoleDF['Hippocampus'][r]) and np.isnan(tadpoleDF['ST29SV%s' % ssNameTag][r]) and \
+                   np.isnan(tadpoleDF['ST88SV%s' % ssNameTag][r])
+      if valsAllNan:
+        continue
+      valsNotEq = float(tadpoleDF['Hippocampus'][r]) != (float(tadpoleDF['ST29SV%s' % ssNameTag][r]) + float(tadpoleDF['ST88SV%s' % ssNameTag][r]))
+      if valsNotEq:
+        print('entries dont match ', tadpoleDF['RID'][r], tadpoleDF['VISCODE'][r],
+              float(tadpoleDF['Hippocampus'][r]),
+              (float(tadpoleDF['ST29SV%s' % ssNameTag][r]) + float(tadpoleDF['ST88SV%s' % ssNameTag][r])))
+
+    # print(tadpoleDF['Hippocampus'] - (tadpoleDF['ST29SV%s' % ssNameTag] + tadpoleDF['ST88SV%s' % ssNameTag]))
+    # assert (tadpoleDF['Hippocampus'] == (tadpoleDF['ST29SV%s' % ssNameTag] + tadpoleDF['ST88SV%s' % ssNameTag])).all()
+    # print('Hippocampus check passed')
+
+
 def performChecks(tadpoleDF, ssDF, otherSSfile, otherSSvisCodeStr, ssNameTag, ignoreMissingCols=False):
   nrRows, nrCols = ssDF.shape
   colListOtherSS = list(ssDF.columns.values)
@@ -1566,11 +1595,11 @@ def checkDatasets(df):
   # print(df['COLPROT'][df['LB4'] == 1])
   assert np.in1d(df['COLPROT'][df['LB4'] == 1], ['ADNIGO', 'ADNI2']).all()
 
-
-print('Calling TADPOLE_D2.py')
-import subprocess
-subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
-print('TADPOLE_D2.py finished')
+if args.runScripts:
+  print('Calling TADPOLE_D2.py')
+  import subprocess
+  subprocess.call(['python3','TADPOLE_D2.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+  print('TADPOLE_D2.py finished')
 
 print(args.runPart)
 if args.runPart == 0:
@@ -1693,10 +1722,11 @@ if runPart[1] == 'R':
       f.write(','.join(['"%s"' % decodeIfBinary(dictAll[r, c]) for c in range(dictAll.shape[1])]))
       f.write('\n')
 
-print('Calling TADPOLE_D3.py')
-import subprocess
-subprocess.call(['python3', 'TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
-print('TADPOLE_D3.py finished')
+if args.runScripts:
+  print('Calling TADPOLE_D3.py')
+  import subprocess
+  subprocess.call(['python3', 'TADPOLE_D3.py', '--spreadsheetFolder', '%s' % args.spreadsheetFolder])
+  print('TADPOLE_D3.py finished')
 
 
 
@@ -1747,4 +1777,11 @@ if performChecksFlag:
   ssDF = pd.read_csv(csfFile)
   performChecks(tadpoleDF, ssDF, csfFile, otherSSvisCodeStr = 'VISCODE2', ssNameTag = ssNameTag)
 
-checkDatasets(tadpoleDF)
+  checkDatasets(tadpoleDF)
+
+ssNameTag = '_%s_%s' % (mriADNI1FileFSX[:-4].split('/')[-1], mriADNI2FileFSX[:-4].split('/')[-1])
+ssDF = pd.read_csv(mriADNI1FileFSX)
+adniMergeDF = pd.read_csv(adniMergeFile)
+checkFSXvalsAgainstADNIMERGE(tadpoleDF, mriADNI1FileFSX, otherSSvisCodeStr = 'VISCODE', ssNameTag = ssNameTag)
+
+
