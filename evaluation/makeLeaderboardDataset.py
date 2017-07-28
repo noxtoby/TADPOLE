@@ -1,4 +1,30 @@
-def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dictAll):
+import os
+import numpy as np
+import csv
+from datetime import datetime
+import pickle
+import pandas as pd
+import argparse
+from argparse import RawTextHelpFormatter
+
+parser = argparse.ArgumentParser(
+  description=r'''
+  Script that constructs the leaderboard datasets.
+
+  Author: Razvan V. Marinescu, razvan.marinescu.14@ucl.ac.uk
+
+ ''', formatter_class=RawTextHelpFormatter
+)
+
+CN = 1
+MCI = 2
+AD = 3
+
+np.random.seed(1)
+
+args = parser.parse_args()
+
+def makeDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, dictAll):
   '''
 
   :param filePath: file containing the ADNI1 s/s
@@ -153,3 +179,6 @@ def addDcolumns(filePath, mergeAll, ridInd, ptidInd, visCodeInd, mergeHeader, di
     notD1orD4Mask = np.logical_not(np.logical_or(D1_2 == 1, D1_4 == 1))
     ridNotSelectedMask = np.logical_not(np.in1d(mergeAll[:, ridInd], selectedRIDs))
     D1_1 = ridNotSelectedMask.astype(int)
+
+
+
