@@ -57,7 +57,8 @@ tdeltaCog = timedelta(days=10)
 df['ForecastDate'] = [datetime.strptime(x, '%Y-%m') for x in df['ForecastDate']] # considers every month estimate to be the actual first day 2017-01
 diagStr = ['CN', 'MCI', 'AD']
 
-trueDf = pd.DataFrame(np.nan,index=range(nrUnqSubj), columns=('RID', 'CogAssessmentDate','Diagnosis', 'ADAS13', 'ScanDate', 'Ventricles'))
+trueDf = pd.DataFrame(np.nan,index=range(nrUnqSubj), columns=('RID', 'CogAssessmentDate',
+  'Diagnosis', 'ADAS13', 'ScanDate', 'Ventricles'))
 
 np.random.seed(1)
 
