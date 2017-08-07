@@ -34,7 +34,7 @@ leaderboard:
 	# submit TADPOLE_Submission_Leaderboard_UCLTest1.csv to TADPOLE website 
 
 clear:
-	rm -f D4_dummy.csv TADPOLE_LB1_LB2.csv ExampleForecastFromD2.csv TADPOLE_LB4.csv TADPOLE_Submission_Leaderboard_UCLTest1.csv leaderboard_table.html TADPOLE_Submission_Leaderboard_TeamName.csv
+	rm -f D4_dummy.csv TADPOLE_LB1_LB2.csv TADPOLE_Submission_SimpleForecast1.csv TADPOLE_LB4.csv TADPOLE_Submission_Leaderboard_UCLTest1.csv leaderboard_table.html TADPOLE_Submission_Leaderboard_TeamName.csv
 
 
 
