@@ -2,3 +2,6 @@
 *.csv
 *~
 *.zip
+evaluation/leaderboard_table.html
+*#
+*__pycache__

@@ -7,7 +7,7 @@ from datetime import datetime
 import MAUC
 import argparse
 
-argparse.ArgumentParser(usage='python3 evalOneSubmission.py',
+parser = argparse.ArgumentParser(usage='python3 evalOneSubmission.py',
   description=r'''
   TADPOLE Evaluation Script:
   The program computes the following matrics:
@@ -26,8 +26,6 @@ argparse.ArgumentParser(usage='python3 evalOneSubmission.py',
 
   ''')
 
-
-
 def calcBCA(estimLabels, trueLabels, nrClasses):
 
   # Balanced Classification Accuracy
@@ -36,17 +34,33 @@ def calcBCA(estimLabels, trueLabels, nrClasses):
   for c0 in range(nrClasses):
     for c1 in range(c0+1,nrClasses):
       # c0 = positive class  &  c1 = negative class
-      TP = np.sum((hardEstimClass == c0) & (d4Df['Diagnosis'] == c0))
-      TN = np.sum((hardEstimClass == c1) & (d4Df['Diagnosis'] == c1))
-      FP = np.sum((hardEstimClass == c1) & (d4Df['Diagnosis'] == c0))
-      FN = np.sum((hardEstimClass == c0) & (d4Df['Diagnosis'] == c1))
+      TP = np.sum((estimLabels == c0) & (trueLabels == c0))
+      TN = np.sum((estimLabels == c1) & (trueLabels == c1))
+      FP = np.sum((estimLabels == c1) & (trueLabels == c0))
+      FN = np.sum((estimLabels == c0) & (trueLabels == c1))
 
-      bcaCurr = 0.5*(TP/(TP+FN)+TN/(TN+FP))
+      # sometimes the sensitivity of specificity can be NaN, if the user doesn't forecast one of the classes.
+      # In this case we assume a default value for sensitivity/specificity
+      sensitivity = TP/(TP+FN)
+      if np.isnan(sensitivity):
+        sensitivity = 0.5
+
+      specificity = TN/(TN+FP)
+      if np.isnan(specificity):
+        specificity = 0.5
+
+      bcaCurr = 0.5*(sensitivity+specificity)
       bcaAll += [bcaCurr]
+      # print('bcaCurr %f TP %f TN %f FP %f FN %f' % (bcaCurr, TP, TN, FP, FN))
 
   return np.mean(bcaAll)
 
-def parseData(d4Df, subDf, diagLabels):
+def parseData(d4Df, forecastDf, diagLabels):
+
+  trueDiag = d4Df['Diagnosis']
+  trueADAS = d4Df['ADAS13']
+  trueVents = d4Df['Ventricles']
+
   nrSubj = d4Df.shape[0]
 
   zipTrueLabelAndProbs = []
@@ -59,106 +73,199 @@ def parseData(d4Df, subDf, diagLabels):
   ventriclesEstimLo = -1 * np.ones(nrSubj, float)  # lower margin
   ventriclesEstimUp = -1 * np.ones(nrSubj, float)  # upper margin
 
-  # for each subject match the closest forecasts
+  # print('subDf.keys()', forecastDf['Forecast Date'])
+  invalidResultReturn = (None,None,None,None,None,None,None,None,None,None,None)
+  invalidFlag = False
+  # for each subject in D4 match the closest user forecasts
   for s in range(nrSubj):
-    currSubjMask = d4Df['RID'].iloc[s] == subDf['RID']
-    currSubjData = subDf[currSubjMask]
+    currSubjMask = d4Df['RID'].iloc[s] == forecastDf['RID']
+    currSubjData = forecastDf[currSubjMask]
+
+    # if subject is missing
+    if currSubjData.shape[0] == 0:
+      print('WARNING: Subject RID %s missing from user forecasts' % d4Df['RID'].iloc[s])
+      invalidFlag = True
+      continue
+
+    # if not all forecast months are present
+    if currSubjData.shape[0] < 5*12: # check if at least 5 years worth of forecasts exist
+      print('WARNING: Missing forecast months for subject with RID %s' % d4Df['RID'].iloc[s])
+      invalidFlag = True
+      continue
+
     currSubjData = currSubjData.reset_index(drop=True)
 
-    timeDiffsScanCog = [d4Df['CogAssessmentDate'].iloc[s] - d for d in currSubjData['ForecastDate']]
+    timeDiffsScanCog = [d4Df['CognitiveAssessmentDate'].iloc[s] - d for d in currSubjData['Forecast Date']]
+    # print('Forecast Date 2',currSubjData['Forecast Date'])
     indexMin = np.argsort(np.abs(timeDiffsScanCog))[0]
     # print('timeDiffsScanMri', indexMin, timeDiffsScanMri)
 
-    pCN = currSubjData['CNRelativeProbability'].iloc[indexMin]
-    pMCI = currSubjData['MCIRelativeProbability'].iloc[indexMin]
-    pAD = currSubjData['ADRelativeProbability'].iloc[indexMin]
+    pCN = currSubjData['CN relative probability'].iloc[indexMin]
+    pMCI = currSubjData['MCI relative probability'].iloc[indexMin]
+    pAD = currSubjData['AD relative probability'].iloc[indexMin]
+
+    # normalise the relative probabilities by their sum
+    pSum = (pCN + pMCI + pAD)/3
+    pCN /= pSum
+    pMCI /= pSum
+    pAD /= pSum
 
     hardEstimClass[s] = np.argmax([pCN, pMCI, pAD])
 
     adasEstim[s] = currSubjData['ADAS13'].iloc[indexMin]
-    adasEstimLo[s] = currSubjData['ADAS1350_CILower'].iloc[indexMin]
-    adasEstimUp[s] = currSubjData['ADAS1350_CIUpper'].iloc[indexMin]
+    adasEstimLo[s] = currSubjData['ADAS13 50% CI lower'].iloc[indexMin]
+    adasEstimUp[s] = currSubjData['ADAS13 50% CI upper'].iloc[indexMin]
 
     # for the mri scan find the forecast closest to the scan date,
     # which might be different from the cognitive assessment date
-    timeDiffsScanMri = [d4Df['ScanDate'].iloc[s] - d for d in currSubjData['ForecastDate']]
+    timeDiffsScanMri = [d4Df['ScanDate'].iloc[s] - d for d in currSubjData['Forecast Date']]
     indexMinMri = np.argsort(np.abs(timeDiffsScanMri))[0]
 
     ventriclesEstim[s] = currSubjData['Ventricles_ICV'].iloc[indexMinMri]
-    ventriclesEstimLo[s] = currSubjData['Ventricles_ICV50_CILower'].iloc[indexMinMri]
-    ventriclesEstimUp[s] = currSubjData['Ventricles_ICV50_CIUpper'].iloc[indexMinMri]
+    ventriclesEstimLo[s] = currSubjData['Ventricles_ICV 50% CI lower'].iloc[indexMinMri]
+    ventriclesEstimUp[s] = currSubjData['Ventricles_ICV 50% CI upper'].iloc[indexMinMri]
     # print('%d probs' % d4Df['RID'].iloc[s], pCN, pMCI, pAD)
 
-    zipTrueLabelAndProbs += [(trueDiag.iloc[s], [pCN, pMCI, pAD])]
+    if not np.isnan(trueDiag.iloc[s]):
+      zipTrueLabelAndProbs += [(trueDiag.iloc[s], [pCN, pMCI, pAD])]
 
 
-  return zipTrueLabelAndProbs, hardEstimClass, adasEstim, adasEstimLo, adasEstimUp, \
-    ventriclesEstim, ventriclesEstimLo, ventriclesEstimUp
+  if invalidFlag:
+    # if at least one subject was missing or if
+    raise ValueError('Submission was incomplete. Please resubmit')
 
-d4Df = pd.read_csv('D4_dummy.csv')
-subDf = pd.read_csv('ExampleForecastFromD2.csv')
+  # If there are NaNs in D4, filter out them along with the corresponding user forecasts
+  # This can happen if rollover subjects don't come for visit in ADNI3.
+  notNanMaskDiag = np.logical_not(np.isnan(trueDiag))
+  trueDiagFilt = trueDiag[notNanMaskDiag]
+  hardEstimClassFilt = hardEstimClass[notNanMaskDiag]
 
-subDf['ForecastDate'] = [datetime.strptime(x, '%Y-%m') for x in subDf['ForecastDate']] # considers every month estimate to be the actual first day 2017-01
-d4Df['CogAssessmentDate'] = [datetime.strptime(x, '%Y-%m-%d') for x in d4Df['CogAssessmentDate']]
-d4Df['ScanDate'] = [datetime.strptime(x, '%Y-%m-%d') for x in d4Df['ScanDate']]
+  notNanMaskADAS = np.logical_not(np.isnan(trueADAS))
+  trueADASFilt = trueADAS[notNanMaskADAS]
+  adasEstim = adasEstim[notNanMaskADAS]
+  adasEstimLo = adasEstimLo[notNanMaskADAS]
+  adasEstimUp = adasEstimUp[notNanMaskADAS]
+
+  notNanMaskVents = np.logical_not(np.isnan(trueVents))
+  trueVentsFilt = trueVents[notNanMaskVents]
+  ventriclesEstim = ventriclesEstim[notNanMaskVents]
+  ventriclesEstimLo = ventriclesEstimLo[notNanMaskVents]
+  ventriclesEstimUp = ventriclesEstimUp[notNanMaskVents]
+
+  assert trueDiagFilt.shape[0] == hardEstimClassFilt.shape[0]
+  assert trueADASFilt.shape[0] == adasEstim.shape[0] == adasEstimLo.shape[0] == adasEstimUp.shape[0]
+  assert trueVentsFilt.shape[0] == ventriclesEstim.shape[0] == \
+         ventriclesEstimLo.shape[0] == ventriclesEstimUp.shape[0]
+
+  return zipTrueLabelAndProbs, hardEstimClassFilt, adasEstim, adasEstimLo, adasEstimUp, \
+    ventriclesEstim, ventriclesEstimLo, ventriclesEstimUp, trueDiagFilt, trueADASFilt, trueVentsFilt
 
 
-mapping = {'CN' : 0, 'MCI' : 1, 'AD' : 2}
-d4Df.replace({'Diagnosis':mapping}, inplace=True)
 
-trueDiag = d4Df['Diagnosis']
-trueADAS = d4Df['ADAS13']
-trueVents = d4Df['Ventricles']
+def evalOneSub(d4Df, forecastDf):
+  """
+    Evaluates one submission.
 
-diagLabels = ['CN', 'MCI', 'AD']
+  Parameters
+  ----------
+  d4Df - Pandas data frame containing the D4 dataset
+  subDf - Pandas data frame containing user forecasts for D2 subjects.
 
-zipTrueLabelAndProbs, hardEstimClass, adasEstim, adasEstimLo, adasEstimUp, \
-    ventriclesEstim, ventriclesEstimLo, ventriclesEstimUp = parseData(d4Df, subDf, diagLabels)
-zipTrueLabelAndProbs = list(zipTrueLabelAndProbs)
+  Returns
+  -------
+  mAUC - multiclass Area Under Curve
+  bca - balanced classification accuracy
+  adasMAE - ADAS13 Mean Aboslute Error
+  ventsMAE - Ventricles Mean Aboslute Error
+  adasCovProb - ADAS13 Coverage Probability for 50% confidence interval
+  ventsCovProb - Ventricles Coverage Probability for 50% confidence interval
 
-########## compute metrics for the clinical status #############
-print('########### Metrics for clinical status ##################')
+  """
 
-# Multiclass AUC
+  forecastDf['Forecast Date'] = [datetime.strptime(x, '%Y-%m') for x in forecastDf['Forecast Date']] # considers every month estimate to be the actual first day 2017-01
+  if isinstance(d4Df['Diagnosis'].iloc[0], str):
+    d4Df['CognitiveAssessmentDate'] = [datetime.strptime(x, '%Y-%m-%d') for x in d4Df['CognitiveAssessmentDate']]
+    d4Df['ScanDate'] = [datetime.strptime(x, '%Y-%m-%d') for x in d4Df['ScanDate']]
+    mapping = {'CN' : 0, 'MCI' : 1, 'AD' : 2}
+    d4Df.replace({'Diagnosis':mapping}, inplace=True)
 
-nrClasses = len(diagLabels)
-mAUC = MAUC.MAUC(zipTrueLabelAndProbs, num_classes=nrClasses)
+  diagLabels = ['CN', 'MCI', 'AD']
 
-bca = calcBCA(hardEstimClass, trueDiag, nrClasses=nrClasses)
-print('Clinical diagnosis metrics: should give around 0.5 since they were generated randomly')
-print('mAUC', mAUC)
-print('bca', bca)
+  zipTrueLabelAndProbs, hardEstimClass, adasEstim, adasEstimLo, adasEstimUp, \
+      ventriclesEstim, ventriclesEstimLo, ventriclesEstimUp, trueDiagFilt, trueADASFilt, trueVentsFilt = \
+    parseData(d4Df, forecastDf, diagLabels)
+  zipTrueLabelAndProbs = list(zipTrueLabelAndProbs)
 
-####### compute metrics for Ventricles and ADAS13 ##########
+  ########## compute metrics for the clinical status #############
 
-#### Mean Absolute Error (MAE) #####
+  ##### Multiclass AUC (mAUC) #####
 
-adasMAE = np.mean(np.abs(adasEstim - trueADAS))
-ventsMAE = np.mean(np.abs(ventriclesEstim - trueVents))
-print('########### Mean Absolute Error (MAE) ##################')
-print('MAE should be around sqrt(2/pi)*sigma, which is 1.190 for ADAS and 1910 for Ventricles')
-print('adasMAE', adasMAE, 'ventsMAE', ventsMAE)
+  nrClasses = len(diagLabels)
+  mAUC = MAUC.MAUC(zipTrueLabelAndProbs, num_classes=nrClasses)
 
-##### Weighted Error Score (WES) ####
-adasCoeffs = 1/(adasEstimUp - adasEstimLo)
-adasWES = np.sum(adasCoeffs * np.abs(adasEstim - trueADAS))/np.sum(adasCoeffs)
+  ### Balanced Classification Accuracy (BCA) ###
+  # print('hardEstimClass', np.unique(hardEstimClass), hardEstimClass)
+  trueDiagFilt = trueDiagFilt.astype(int)
+  # print('trueDiagFilt', np.unique(trueDiagFilt), trueDiagFilt)
+  bca = calcBCA(hardEstimClass, trueDiagFilt, nrClasses=nrClasses)
 
-ventsCoeffs = 1/(ventriclesEstimUp - ventriclesEstimLo)
-ventsWES = np.sum(ventsCoeffs * np.abs(ventriclesEstim - trueVents))/np.sum(ventsCoeffs)
+  ####### compute metrics for Ventricles and ADAS13 ##########
 
-print('WES should be similar to MAE, since the coefficients are almost equal.')
-print('adasWES', adasWES, 'ventsWES', ventsWES)
+  #### Mean Absolute Error (MAE) #####
 
-#### Coverage Probability Accuracy (CPA) ####
-print('########### Coverage Probability Accuracy (CPA) ##################')
+  adasMAE = np.mean(np.abs(adasEstim - trueADASFilt))
+  ventsMAE = np.mean(np.abs(ventriclesEstim - trueVentsFilt))
 
-adasActualCoverageProb = np.sum((adasEstimLo < trueADAS) & (adasEstimUp > trueADAS))/trueADAS.shape[0]
-adasCPA = np.abs(adasActualCoverageProb - 0.5)
+  ##### Weighted Error Score (WES) ####
+  adasCoeffs = 1/(adasEstimUp - adasEstimLo)
+  adasWES = np.sum(adasCoeffs * np.abs(adasEstim - trueADASFilt))/np.sum(adasCoeffs)
 
-ventsActualCoverageProb = np.sum((ventriclesEstimLo < trueVents) &
-                                 (ventriclesEstimUp > trueVents))/trueVents.shape[0]
-ventsCPA = np.abs(ventsActualCoverageProb - 0.5)
+  ventsCoeffs = 1/(ventriclesEstimUp - ventriclesEstimLo)
+  ventsWES = np.sum(ventsCoeffs * np.abs(ventriclesEstim - trueVentsFilt))/np.sum(ventsCoeffs)
 
-print('adasCPA', adasCPA, 'ventsCPA', ventsCPA)
-# print('adasActualCoverageProb', adasActualCoverageProb)
-# print('ventsActualCoverageProb', ventsActualCoverageProb)
+  #### Coverage Probability (CP) ####
+
+  adasCovProb = np.sum((adasEstimLo < trueADASFilt) &
+                       (adasEstimUp > trueADASFilt))/trueADASFilt.shape[0]
+  adasCP = adasCovProb # don't do |adasCP - 0.5|
+
+  ventsCovProb = np.sum((ventriclesEstimLo < trueVentsFilt) &
+                        (ventriclesEstimUp > trueVentsFilt))/trueVentsFilt.shape[0]
+  ventsCP = ventsCovProb
+
+  return mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCP, ventsCP
+
+if __name__ == "__main__":
+
+  parser.add_argument('--d4File', dest='d4File', help='CSV file containing the D4 dataset. '\
+    'Needs to be in the same format of D4_dummy.csv')
+
+  parser.add_argument('--forecastFile', dest='forecastFile', help='CSV file containing the user '
+    'forecasts for subjects in D2. Needs to be in the same format as '
+    'TADPOLE_Submission_TeamName.xlsx or TADPOLE_Submission_Leaderboard_TeamName.csv')
+
+  args = parser.parse_args()
+
+  d4File = args.d4File
+  forecastFile = args.forecastFile
+
+  d4Df = pd.read_csv(d4File)
+  subDf = pd.read_csv(forecastFile)
+
+  # don't catch the exception here, as this main function is used to test if the submission if correct
+  mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCP, ventsCP = \
+    evalOneSub(d4Df, subDf)
+
+  print('########### Metrics for clinical status ##################')
+  print('mAUC', mAUC)
+  print('bca', bca)
+  print('\n########### Mean Absolute Error (MAE) ##################')
+  print('adasMAE', adasMAE, 'ventsMAE', ventsMAE)
+  print('\n########### Weighted Error Score (WES) ##################')
+  print('adasWES', adasWES, 'ventsWES', ventsWES)
+  print('\n########### Coverage Probability ##################')
+  print('adasCP', adasCP, 'ventsCP', ventsCP)
+
+  print('\n\n########### File is ready for submission to TADPOLE ###########')
+
+

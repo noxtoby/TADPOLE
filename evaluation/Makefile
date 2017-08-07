@@ -1,2 +1,46 @@
-all:
-	python3 makeDummyD4.py; python3 evalOneSubmission.py
+MATLAB_PATH = ~/programs/MATLAB/bin/matlab
+
+######## pipeline for running the evaluation on a proper submission ###########
+eval:
+	# First save TADPOLE_D1_D2.csv in the parent directory
+	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
+	$(MATLAB_PATH) -nodesktop -nosplash -r "SimpleForecastExampleFromD2; exit";
+
+	# Then make a dummy D4 dataset, which would be similar in format to the real D4
+	python3 makeDummyD4.py;
+
+	# Evaluate the user forecasts from SimpleForecastExampleFromD2.csv against D4_dummy.csv using the evaluation function
+	python3 evalOneSubmission.py --d4File D4_dummy.csv --forecastFile ExampleForecastFromD2.csv;
+
+	# Clinical diagnosis metrics: should give around 0.5 since they were generated randomly
+	# MAE should be around sqrt(2/pi)*sigma, which is 1.190 for ADAS and 1910 for Ventricles
+	# WES should be similar to MAE, since the coefficients are almost equal.
+
+########### pipeline for running the evaluation on a leaderboard submission ##########
+leaderboard:
+	# First generate the leaderboard datasets LB1, LB2 and LB4
+	python3 makeLeaderboardDataset.py;
+
+	# Then generate a simple forecast from LB2
+	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
+	$(MATLAB_PATH) -nodesktop -nosplash -r "SimpleForecastExampleFromLB2; exit";
+
+	# Evaluate the user forecasts from TADPOLE_Submission_Leaderboard_UCLTest1.csv against TADPOLE_LB4.csv using the evaluation function
+	python3 evalOneSubmission.py --d4File TADPOLE_LB4.csv --forecastFile TADPOLE_Submission_Leaderboard_UCLTest1.csv;
+
+	# submit TADPOLE_Submission_Leaderboard_UCLTest1.csv to TADPOLE website 
+
+clear:
+	rm D4_dummy.csv TADPOLE_LB1_LB2.csv ExampleForecastFromD2.csv TADPOLE_LB4.csv TADPOLE_Submission_Leaderboard_UCLTest1.csv
+
+
+
+
+
+###### DEVELOPERS ONLY ##########
+
+copyToPublicRepo:
+	cp evalOneSubmission.py leaderboardRunAll.py SimpleForecastExampleFromD2.m makeDummyD4.py makeLeaderboardDataset.py SimpleForecastExampleFromLB2.m MAUC.py Makefile ../neil_repo/evaluation
+
+processLeaderboardSubmissions:
+	python3 leaderboardRunAll.py

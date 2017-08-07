@@ -54,10 +54,10 @@ endDate = '2019-02-28'
 # perturb the cognitive assessment date from the scan date by max 10 days
 tdeltaCog = timedelta(days=10)
 
-df['ForecastDate'] = [datetime.strptime(x, '%Y-%m') for x in df['ForecastDate']] # considers every month estimate to be the actual first day 2017-01
+df['Forecast Date'] = [datetime.strptime(x, '%Y-%m') for x in df['Forecast Date']] # considers every month estimate to be the actual first day 2017-01
 diagStr = ['CN', 'MCI', 'AD']
 
-trueDf = pd.DataFrame(np.nan,index=range(nrUnqSubj), columns=('RID', 'CogAssessmentDate',
+trueDf = pd.DataFrame(np.nan,index=range(nrUnqSubj), columns=('RID', 'CognitiveAssessmentDate',
   'Diagnosis', 'ADAS13', 'ScanDate', 'Ventricles'))
 
 np.random.seed(1)
@@ -75,18 +75,18 @@ for s in range(nrUnqSubj):
     (randDateScanCurr+tdeltaCog).strftime(stdDateFormat), random.random())
 
   # find the closest estimates, add noise and set them as the true D4
-  timeDiffsScanMri = [randDateScanCurr - d for d in currSubjData['ForecastDate']]
+  timeDiffsScanMri = [randDateScanCurr - d for d in currSubjData['Forecast Date']]
   indexMin = np.argsort(np.abs(timeDiffsScanMri))[0]
 
   randDiag = diagStr[np.random.randint(0,3)]
 
   # std=50%_CI/(2*0.67) .. taken from en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule#Table_of_numerical_values
-  adasStd = (currSubjData['ADAS1350_CIUpper'].iloc[indexMin] -
-             currSubjData['ADAS1350_CILower'].iloc[indexMin])/(2*0.67)
+  adasStd = (currSubjData['ADAS13 50% CI upper'].iloc[indexMin] -
+             currSubjData['ADAS13 50% CI lower'].iloc[indexMin])/(2*0.67)
   # print('adasStd', adasStd)
   randADAS = round(np.random.normal(loc=currSubjData['ADAS13'].iloc[indexMin], scale=adasStd))
-  ventStd = (currSubjData['Ventricles_ICV50_CIUpper'].iloc[indexMin] -
-             currSubjData['Ventricles_ICV50_CILower'].iloc[indexMin])/(2*0.67)
+  ventStd = (currSubjData['Ventricles_ICV 50% CI upper'].iloc[indexMin] -
+             currSubjData['Ventricles_ICV 50% CI lower'].iloc[indexMin])/(2*0.67)
   # print('ventStd', ventStd)
   randVent = round(np.random.normal(loc=currSubjData['Ventricles_ICV'].iloc[indexMin], scale=ventStd))
 
