@@ -124,7 +124,7 @@ def makeLBcolumns(filePath, adniMergeDf):
 
 
 tadpoleFile = '%s/TADPOLE_D1_D2.csv' % args.spreadsheetFolder
-tadpoleDf = pd.read_csv(tadpoleFile)
+tadpoleDf = pd.read_csv(tadpoleFile, low_memory=False)
 d2File = 'D2_column.csv'
 LB1, LB2, LB4 = makeLBcolumns(d2File, tadpoleDf)
 

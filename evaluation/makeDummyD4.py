@@ -44,7 +44,7 @@ def strTimeProp(start, end, format, prop):
 def randomDate(start, end, prop):
   return strTimeProp(start, end, stdDateFormat, prop)
 
-df = pd.read_csv('ExampleForecastFromD2.csv')
+df = pd.read_csv('TADPOLE_Submission_SimpleForecast1.csv')
 # print('df', df)
 
 unqSubj = np.unique(df['RID'])

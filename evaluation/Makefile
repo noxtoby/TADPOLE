@@ -1,3 +1,4 @@
+# change this to the matlab path of the local computer
 MATLAB_PATH = ~/programs/MATLAB/bin/matlab
 
 ######## pipeline for running the evaluation on a proper submission ###########
@@ -10,15 +11,17 @@ eval:
 	python3 makeDummyD4.py;
 
 	# Evaluate the user forecasts from SimpleForecastExampleFromD2.csv against D4_dummy.csv using the evaluation function
-	python3 evalOneSubmission.py --d4File D4_dummy.csv --forecastFile ExampleForecastFromD2.csv;
+	python3 evalOneSubmission.py --d4File D4_dummy.csv --forecastFile TADPOLE_Submission_SimpleForecast1.csv;
 
+    #### Expected numbers for our generated dataset. These don't apply to the leaderboard submission
+    #### or other types of predictive models or D4 dummy datasets
 	# Clinical diagnosis metrics: should give around 0.5 since they were generated randomly
 	# MAE should be around sqrt(2/pi)*sigma, which is 1.190 for ADAS and 1910 for Ventricles
 	# WES should be similar to MAE, since the coefficients are almost equal.
 
 ########### pipeline for running the evaluation on a leaderboard submission ##########
 leaderboard:
-	# First generate the leaderboard datasets LB1, LB2 and LB4
+	# First generate the leaderboard datasets LB1, LB2 and LB4 and the submission skeleton
 	python3 makeLeaderboardDataset.py;
 
 	# Then generate a simple forecast from LB2
@@ -26,12 +29,12 @@ leaderboard:
 	$(MATLAB_PATH) -nodesktop -nosplash -r "SimpleForecastExampleFromLB2; exit";
 
 	# Evaluate the user forecasts from TADPOLE_Submission_Leaderboard_UCLTest1.csv against TADPOLE_LB4.csv using the evaluation function
-	python3 evalOneSubmission.py --d4File TADPOLE_LB4.csv --forecastFile TADPOLE_Submission_Leaderboard_UCLTest1.csv;
+	python3 evalOneSubmission.py --leaderboard --d4File TADPOLE_LB4.csv --forecastFile TADPOLE_Submission_Leaderboard_UCLTest1.csv;
 
 	# submit TADPOLE_Submission_Leaderboard_UCLTest1.csv to TADPOLE website 
 
 clear:
-	rm D4_dummy.csv TADPOLE_LB1_LB2.csv ExampleForecastFromD2.csv TADPOLE_LB4.csv TADPOLE_Submission_Leaderboard_UCLTest1.csv
+	rm -f D4_dummy.csv TADPOLE_LB1_LB2.csv ExampleForecastFromD2.csv TADPOLE_LB4.csv TADPOLE_Submission_Leaderboard_UCLTest1.csv leaderboard_table.html TADPOLE_Submission_Leaderboard_TeamName.csv
 
 
 

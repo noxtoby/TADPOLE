@@ -14,7 +14,7 @@ dataLocation = '../';
 
 
 tadpoleD1D2File = fullfile(dataLocation,'TADPOLE_D1_D2.csv');
-outputFile = 'ExampleForecastFromD2.csv';
+outputFile = 'TADPOLE_Submission_SimpleForecast1.csv';
 errorFlag = 0;
 if ~(exist(tadpoleD1D2File, 'file') == 2)
   error(sprintf(strcat('File %s does not exist. You need to download\n ',  ... 

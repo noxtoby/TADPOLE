@@ -34,9 +34,11 @@ The following scripts need to be run in this order:
 
 See the Makefile (leaderboard section) for how to run the scripts
 
-##### Developers only #####
+##### Generating the leaderboard table ######
+
+This section is mainly for TADPOLE Organisers, but individual users are welcome to have a look at the leaderboardRunAll.py script, if they're interested to know how the leaderboard table is generated
 
 The script leaderboardRunAll.py downloads all the TADPOLE leaderboard submissions from the website (via the shared Dropbox folder), evaluates them against LB4 and then uploads the results back on the website in the leaderboard table.
 
-The script only downloads and evaluates files that start with 'TADPOLE_Submission_Leaderboard'
+The script only downloads and evaluates files that start with 'TADPOLE_Submission_Leaderboard'. Files are assumed to be in .csv format
 
