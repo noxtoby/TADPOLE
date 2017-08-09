@@ -1,11 +1,11 @@
 # change this to the matlab path of the local computer
-MATLAB_PATH = ~/programs/MATLAB/bin/matlab
-
+#MATLAB_PATH = ~/programs/MATLAB/bin/matlab
+MATLAB_PATH = /Applications/MATLAB_R2015b.app/bin/matlab
 ######## pipeline for running the evaluation on a proper submission ###########
 eval:
 	# First save TADPOLE_D1_D2.csv in the parent directory
 	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
-	$(MATLAB_PATH) -nodesktop -nosplash -r "SimpleForecastExampleFromD2; exit";
+	$(MATLAB_PATH) -nodesktop -nosplash -r "cd $(CURDIR); TADPOLE_SimpleForecastExample; exit";
 
 	# Then make a dummy D4 dataset, which would be similar in format to the real D4
 	python3 makeDummyD4.py;
@@ -26,7 +26,7 @@ leaderboard:
 
 	# Then generate a simple forecast from LB2
 	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
-	$(MATLAB_PATH) -nodesktop -nosplash -r "SimpleForecastExampleFromLB2; exit";
+	$(MATLAB_PATH) -nodesktop -nosplash -r "cd $(CURDIR); TADPOLE_SimpleForecastExample; exit";
 
 	# Evaluate the user forecasts from TADPOLE_Submission_Leaderboard_UCLTest1.csv against TADPOLE_LB4.csv using the evaluation function
 	python3 evalOneSubmission.py --leaderboard --d4File TADPOLE_LB4.csv --forecastFile TADPOLE_Submission_Leaderboard_UCLTest1.csv;
