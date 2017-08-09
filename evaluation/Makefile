@@ -1,10 +1,12 @@
 # change this to the matlab path of the local computer
-#MATLAB_PATH = ~/programs/MATLAB/bin/matlab
-MATLAB_PATH = /Applications/MATLAB_R2015b.app/bin/matlab
+MATLAB_PATH = ~/programs/MATLAB/bin/matlab
+#MATLAB_PATH = /Applications/MATLAB_R2015b.app/bin/matlab
 ######## pipeline for running the evaluation on a proper submission ###########
 eval:
 	# First save TADPOLE_D1_D2.csv in the parent directory
 	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
+
+	Generate a simple forecast from D2 and save it as TADPOLE_Submission_SimpleForecast1.csv ... Replace SimpleForecast1 with your team name
 	$(MATLAB_PATH) -nodesktop -nosplash -r "cd $(CURDIR); TADPOLE_SimpleForecastExample; exit";
 
 	# Then make a dummy D4 dataset, which would be similar in format to the real D4
@@ -24,7 +26,7 @@ leaderboard:
 	# First generate the leaderboard datasets LB1, LB2 and LB4 and the submission skeleton
 	python3 makeLeaderboardDataset.py;
 
-	# Then generate a simple forecast from LB2
+	# Then generate a simple forecast from LB2, and save it as TADPOLE_Submission_Leaderboard_UCLTest1.csv ... Replace UCLTest1 with your team name
 	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
 	$(MATLAB_PATH) -nodesktop -nosplash -r "cd $(CURDIR); TADPOLE_SimpleForecastExampleLeaderboard; exit";
 
