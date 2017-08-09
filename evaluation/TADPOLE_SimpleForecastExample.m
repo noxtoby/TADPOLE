@@ -24,7 +24,7 @@
 %% Read in the TADPOLE data set and extract a few columns of salient information.
 % Script requires that TADPOLE_D1_D2.csv is in the parent directory. Change if
 % necessary
-dataLocation = '/Users/noxtoby/Documents/Research/TADPOLE2017/Data/tadpole_challenge';%dataLocation = '../';
+dataLocation = '../';
 
 tadpoleD1D2File = fullfile(dataLocation,'TADPOLE_D1_D2.csv');
 outputFile = 'TADPOLE_Submission_SimpleForecast1.csv';
