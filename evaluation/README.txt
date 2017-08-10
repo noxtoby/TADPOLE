@@ -22,7 +22,7 @@ The following scripts need to be run in this order:
 
 See the Makefile (eval section) for how to run the scripts
 
-###### Evaluation of a proper TADPOLE submission #########
+###### Evaluation of a leaderboard submission #########
 
 We provide scripts that can be used to generate the leaderboard datasets (LB1, LB2 and LB4) from the TADPOLE datasets, then generate forecasts for LB2 subjects using a simple method. These forecasts are then compared against the true values in LB4. The results are published on the TADPOLE website.
 
