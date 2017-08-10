@@ -1,9 +1,9 @@
 
 ######## Evaluation scripts for used in the TADPOLE challenge ##########
 
-Scripts provided here are for two main purposes:
-1. evaluation of a proper TADPOLE submission
-2. evaluation of a leaderboard submission
+Scripts provided in this subfolder are for two main purposes:
+1. generating and evaluating a proper TADPOLE submission
+2. generating the leaderboard datasets (LB1, LB2 and LB4) + generating and evaluating a leaderboard submission
 
 For both scenarios, we provide pipelines in the Makefile. These can be run as follows:
 1. make eval (TADPOLE submission)
