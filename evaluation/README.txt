@@ -9,7 +9,7 @@ For both scenarios, we provide pipelines in the Makefile. These can be run as fo
 1. make eval (TADPOLE submission)
 2. make leaderboard (leaderboard submission)
 
-##### Evaluation of a proper TADPOLE submission #########
+##### Generation and evaluation of a proper TADPOLE submission #########
 
 We provide some scripts that can be used to test if the submission is valid and compute actual performance measures against a dummy D4 dataset, which is generated (almost) randomly
 
@@ -22,7 +22,7 @@ The following scripts need to be run in this order:
 
 See the Makefile (eval section) for how to run the scripts
 
-###### Evaluation of a leaderboard submission #########
+###### Generation and evaluation of a leaderboard submission #########
 
 We provide scripts that can be used to generate the leaderboard datasets (LB1, LB2 and LB4) from the TADPOLE datasets, then generate forecasts for LB2 subjects using a simple method. These forecasts are then compared against the true values in LB4. The results are published on the TADPOLE website.
 
