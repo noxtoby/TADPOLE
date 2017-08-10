@@ -2,7 +2,7 @@
 MATLAB_PATH = ~/programs/MATLAB/bin/matlab
 #MATLAB_PATH = /Applications/MATLAB_R2015b.app/bin/matlab
 
-######## pipeline for running the evaluation on a proper submission ###########
+######## pipeline for generating and evaluating a proper TADPOLE submission ###########
 eval:
 	# First save TADPOLE_D1_D2.csv in the parent directory
 	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
@@ -23,7 +23,7 @@ eval:
 	# MAE should be around sqrt(2/pi)*sigma, which is 1.190 for ADAS and 1910 for Ventricles
 	# WES should be similar to MAE, since the coefficients are almost equal.
 
-########### pipeline for running the evaluation on a leaderboard submission ##########
+########### pipeline for generating and evaluating a leaderboard submission ##########
 leaderboard:
 	# First generate the leaderboard datasets LB1, LB2 and LB4 and the submission skeleton
 	python3 makeLeaderboardDataset.py;
