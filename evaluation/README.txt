@@ -6,8 +6,8 @@ Scripts provided in this subfolder are for two main purposes:
 2. generating the leaderboard datasets (LB1, LB2 and LB4) + generating and evaluating a leaderboard submission
 
 For both scenarios, we provide pipelines in the Makefile. These can be run as follows:
-1. make eval (TADPOLE submission)
-2. make leaderboard (leaderboard submission)
+1. make eval (proper TADPOLE submission)
+2. make leaderboard (leaderboard dataset generation + leaderboard submission)
 
 ##### Generation and evaluation of a proper TADPOLE submission #########
 
