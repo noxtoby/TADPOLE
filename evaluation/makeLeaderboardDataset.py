@@ -157,7 +157,8 @@ lb4Df['CognitiveAssessmentDate'] = tadpoleDf['EXAMDATE']
 lb4Df['Diagnosis'] = tadpoleDf['DXCHANGE']
 lb4Df['ADAS13'] = tadpoleDf['ADAS13']
 lb4Df['ScanDate'] = tadpoleDf['EXAMDATE'] # for now set the scan date to be EXAMDATE
-lb4Df['Ventricles'] = tadpoleDf['Ventricles'] # uses FS X-sectional from ADNIMERGE
+lb4Df['Ventricles'] = tadpoleDf['Ventricles'] / tadpoleDf['ICV'] # uses FS X-sectional volumes from ADNIMERGE
+
 
 
 # convert diagnoses such as 'MCI to Dementia' to 'Dementia', etc ...

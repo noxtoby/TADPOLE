@@ -20,8 +20,9 @@ eval:
     #### Expected numbers for our generated dataset. These don't apply to the leaderboard submission
     #### or other types of predictive models or D4 dummy datasets
 	# Clinical diagnosis metrics: should give around 0.5 since they were generated randomly
-	# MAE should be around sqrt(2/pi)*sigma, which is 1.190 for ADAS and 1910 for Ventricles
+	# MAE should be around sqrt(2/pi)*sigma, which is 1.190 for ADAS and 0.00065 for Ventricles
 	# WES should be similar to MAE, since the coefficients are almost equal.
+	# CP should be around 0.5 for both, but ADAS13 is lower due to the fact that negative scores that are rounded to zero
 
 ########### pipeline for generating and evaluating a leaderboard submission ##########
 leaderboard:

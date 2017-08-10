@@ -88,13 +88,13 @@ for s in range(nrUnqSubj):
   ventStd = (currSubjData['Ventricles_ICV 50% CI upper'].iloc[indexMin] -
              currSubjData['Ventricles_ICV 50% CI lower'].iloc[indexMin])/(2*0.67)
   # print('ventStd', ventStd)
-  randVent = round(np.random.normal(loc=currSubjData['Ventricles_ICV'].iloc[indexMin], scale=ventStd))
+  randVent = np.random.normal(loc=currSubjData['Ventricles_ICV'].iloc[indexMin], scale=ventStd)
 
   # set these randomly generated values to be the true measurements (i.e. D4 dataset)
   trueDf.iloc[s] = [unqSubj[s], randDateCog.strftime(stdDateFormat), randDiag, randADAS, randDateScanCurr.strftime(stdDateFormat), randVent]
 
 trueDf.RID = trueDf.RID.astype(int)
 trueDf.ADAS13 = trueDf.ADAS13.astype(int)
-trueDf.Ventricles = trueDf.Ventricles.astype(int)
+trueDf.Ventricles = trueDf.Ventricles.astype(float)
 
 trueDf.to_csv('D4_dummy.csv',index=False)
