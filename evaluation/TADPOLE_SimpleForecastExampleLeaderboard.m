@@ -39,7 +39,7 @@ dataLocationLB1LB2 = './';% current directory
 
 tadpoleD1D2File = fullfile(dataLocationD1D2,'TADPOLE_D1_D2.csv');
 tadpoleLB1LB2File = fullfile(dataLocationLB1LB2,'TADPOLE_LB1_LB2.csv');
-outputFile = 'TADPOLE_Submission_Leaderboard_SimpleForecast1.csv';
+outputFile = 'TADPOLE_Submission_Leaderboard_TeamName1.csv';
 errorFlag = 0;
 if ~(exist(tadpoleD1D2File, 'file') == 2)
   error(sprintf(strcat('File %s does not exist. You need to download\n ',  ... 
@@ -183,7 +183,7 @@ for i=1:N_LB2 % Each subject in LB2
     if sum(exams_with_CLIN_STAT)>=1 % Subject has a Clinical status
       % Index of most recent visit with a Clinical status
       ind = subj_rows( subj_exam_dates(exams_with_CLIN_STAT) == max(subj_exam_dates(exams_with_CLIN_STAT)) );
-      most_recent_CLIN_STAT{i} = CLIN_STAT_Col(ind);
+      most_recent_CLIN_STAT{i} = CLIN_STAT_Col(ind(end));
     else % Subject has no Clinical statuses in the data set
       most_recent_CLIN_STAT{i} = '';
     end
@@ -191,7 +191,7 @@ for i=1:N_LB2 % Each subject in LB2
     if sum(exams_with_ADAS13)>=1 % Subject has an ADAS13 score
       % Index of most recent visit with an ADAS13 score
       ind = subj_rows( subj_exam_dates(exams_with_ADAS13) == max(subj_exam_dates(exams_with_ADAS13)) ); 
-      most_recent_ADAS13(i) = ADAS13_Col(ind);
+      most_recent_ADAS13(i) = ADAS13_Col(ind(end));
     else % Subject has no ADAS13 scores in the data set
       most_recent_ADAS13(i) = -1;
     end
@@ -199,7 +199,7 @@ for i=1:N_LB2 % Each subject in LB2
     if sum(exams_with_ventsv)>=1 % Subject has a ventricles volume recorded
       % Index of most recent visit with a ventricles volume
       ind = subj_rows( subj_exam_dates(exams_with_ventsv) == max(subj_exam_dates(exams_with_ventsv)) );
-      most_recent_Ventricles_ICV(i) = Ventricles_ICV_Col(ind);
+      most_recent_Ventricles_ICV(i) = Ventricles_ICV_Col(ind(end));
     else % Subject has no ventricle volume measurement in the data set
         most_recent_Ventricles_ICV(i) = -1;
     end

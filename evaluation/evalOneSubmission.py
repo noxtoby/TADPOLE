@@ -242,7 +242,7 @@ if __name__ == "__main__":
 
   parser.add_argument('--forecastFile', dest='forecastFile', help='CSV file containing the user '
     'forecasts for subjects in D2. Needs to be in the same format as '
-    'TADPOLE_Submission_TeamName.xlsx or TADPOLE_Submission_Leaderboard_TeamName.csv')
+    'TADPOLE_Submission_TeamName1.xlsx or TADPOLE_Submission_Leaderboard_TeamName1.csv')
 
   parser.add_argument('--leaderboard', action='store_true', help='pass this flag if the submission is a leaderboard submission. It ensures the filename is in the right format')
 
@@ -254,10 +254,10 @@ if __name__ == "__main__":
 
   if args.leaderboard:
     if (not forecastFile.startswith('TADPOLE_Submission_Leaderboard_')) or (not forecastFile.endswith('.csv')):
-      raise ValueError('Leaderboard submission filename is not in the correct format: TADPOLE_Submission_Leaderboard_TEAMNAME.csv')
+      raise ValueError('Leaderboard submission filename is not in the correct format: TADPOLE_Submission_Leaderboard_TeamName.csv')
   else:
     if (not forecastFile.startswith('TADPOLE_Submission_')) or (not forecastFile.endswith('.csv')):
-      raise ValueError('Submission filename is not in the correct format: TADPOLE_Submission_TEAMNAME.csv.')
+      raise ValueError('Submission filename is not in the correct format: TADPOLE_Submission_TeamName.csv.')
 
   d4Df = pd.read_csv(d4File)
   subDf = pd.read_csv(forecastFile)

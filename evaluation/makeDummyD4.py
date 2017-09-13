@@ -11,7 +11,7 @@ argparse.ArgumentParser(usage='python3 makeDummyD4.py',
   description=r'''
   The program creates a dummy D4 dataset from an already generated forecast CSV spreadsheet:
 
-    ExampleForecastFromD2.csv
+    TADPOLE_Submission_TeamName1.csv
 
   This spreadsheet is assumed to be in the current folder.
 
@@ -44,7 +44,7 @@ def strTimeProp(start, end, format, prop):
 def randomDate(start, end, prop):
   return strTimeProp(start, end, stdDateFormat, prop)
 
-df = pd.read_csv('TADPOLE_Submission_SimpleForecast1.csv')
+df = pd.read_csv('TADPOLE_Submission_TeamName1.csv')
 # print('df', df)
 
 unqSubj = np.unique(df['RID'])
