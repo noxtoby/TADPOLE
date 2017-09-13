@@ -1,5 +1,6 @@
 
 ######## Evaluation scripts for used in TADPOLE Challenge 2017 ##########
+Requires: Python version 3 (python3), and some dependencies.
 
 Scripts provided in this subfolder are for two main purposes:
 1. generating and evaluating an example of a valid TADPOLE submission
@@ -15,8 +16,8 @@ We provide some scripts that can be used to test if the submission is valid and 
 
 The following scripts need to be run in this order:
   1. TADPOLE_SimpleForecastExample.m (MATLAB) - constructs a simple forecast from the D2 dataset. Requires TADPOLE_D1_D2.csv spreadsheet. You can use this MATLAB script as a starting point for making your own forecasts via MATLAB, and generating a spreadsheet with the correct format for submission to the challenge.
-  2. makeDummyD4.py (Python) - builds a dummy D4 dataset, which would be similar in format to the real D4
-  3. evalOneSubmission.py (Python) - evaluates the previously-generated user forecasts against the D4 dummy dataset
+  2. makeDummyD4.py (Python 3) - builds a dummy D4 dataset, which would be similar in format to the real D4
+  3. evalOneSubmission.py (Python 3) - evaluates the previously-generated user forecasts against the D4 dummy dataset
 
 See the Makefile (eval section) for how to run the scripts
 
@@ -30,7 +31,7 @@ The following scripts need to be run in this order:
   1. makeLeaderboardDataset.py - creates the leaderboard datasets LB1 (training), LB2 (subjects for which forecasts are requires) and LB4 (biomarker values for LB2 subjects at later visits). Also creates the submission skeleton for the leaderboard TADPOLE_Submission_Leaderboard_TeamName.csv
   2. TADPOLE_SimpleForecastExampleLeaderboard.m - generates forecasts for every subject in LB2 using a simple method
   3. evalOneSubmission.py - evaluates the previously generated user forecasts against LB4
-If there are no errors and the performance measures are computed successfully, upload your results spreadsheet via the TADPOLE website.
+If everything runs without errors and step 3 prints out the performance measures successfully, your leaderboard submission spreadsheet is ready to be uploaded via the TADPOLE website. You must be registered on the website, and logged in, in order to upload via the Submit page.
 
 See the Makefile (leaderboard section) for how to run the scripts
 
