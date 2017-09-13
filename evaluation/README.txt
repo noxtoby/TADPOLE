@@ -1,5 +1,6 @@
 
 ######## Evaluation scripts for used in TADPOLE Challenge 2017 ##########
+Requires: Python version 3 (python3), and some dependencies.
 
 Scripts provided in this subfolder are for two main purposes:
 1. generating and evaluating an example of a valid TADPOLE submission
@@ -15,8 +16,8 @@ We provide some scripts that can be used to test if the submission is valid and 
 
 The following scripts need to be run in this order:
   1. TADPOLE_SimpleForecastExample.m (MATLAB) - constructs a simple forecast from the D2 dataset. Requires TADPOLE_D1_D2.csv spreadsheet. You can use this MATLAB script as a starting point for making your own forecasts via MATLAB, and generating a spreadsheet with the correct format for submission to the challenge.
-  2. makeDummyD4.py (Python) - builds a dummy D4 dataset, which would be similar in format to the real D4
-  3. evalOneSubmission.py (Python) - evaluates the previously-generated user forecasts against the D4 dummy dataset
+  2. makeDummyD4.py (Python 3) - builds a dummy D4 dataset, which would be similar in format to the real D4
+  3. evalOneSubmission.py (Python 3) - evaluates the previously-generated user forecasts against the D4 dummy dataset
 
 See the Makefile (eval section) for how to run the scripts
 
