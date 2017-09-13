@@ -30,7 +30,7 @@ The following scripts need to be run in this order:
   1. makeLeaderboardDataset.py - creates the leaderboard datasets LB1 (training), LB2 (subjects for which forecasts are requires) and LB4 (biomarker values for LB2 subjects at later visits). Also creates the submission skeleton for the leaderboard TADPOLE_Submission_Leaderboard_TeamName.csv
   2. TADPOLE_SimpleForecastExampleLeaderboard.m - generates forecasts for every subject in LB2 using a simple method
   3. evalOneSubmission.py - evaluates the previously generated user forecasts against LB4
-If there are no errors and the performance measures are computed successfully, upload your results spreadsheet via the TADPOLE website.
+If everything runs without errors and step 3 prints out the performance measures successfully, your leaderboard submission spreadsheet is ready to be uploaded via the TADPOLE website. You must be registered on the website, and logged in, in order to upload via the Submit page.
 
 See the Makefile (leaderboard section) for how to run the scripts
 
