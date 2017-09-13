@@ -1,13 +1,13 @@
-% TADPOLE_SimpleForecastExample.m
+% TADPOLE_SimpleForecastExampleLeaderboard.m
 %
 % Example code showing how to construct a forecast in the correct format
 % for a leaderboard submission to TADPOLE Challenge 2017 from the LB2 
 % prediction set. The forecast simply uses a set of predefined defaults:
 % 1. Likelihoods of each diagnosis (CN, MCI, AD) that depend on the
 % subject's most recent clinical status. 
-% 2. Forecasts of future ADAS13 score and Ventricles volume are just that
-% they are unchanged from the most recent measurement, or filled with
-% defaults where data is missing.
+% 2. Forecasts of future ADAS13 score and Ventricles volume are just the
+% same as the most recent measurement, or filled with defaults where the
+% data is missing.
 %
 % ****** The purpose of the code is not to give a good forecast! ******
 % 
@@ -41,7 +41,12 @@ if errorFlag
   exit;
 end
 
-%* Read in the D1_D2 spreadsheet.
+% choose whether to dispaly warning messages
+verbose = 0;
+
+%* Read in the D1_D2 spreadsheet. This contains all the necessary data, as the
+% TADPOLE_LB1_LB2.csv spreadsheet only contains the LB1 and LB2 indicators, 
+% aligned to TADPOLE_D1_D2.csv
 TADPOLE_Table = readtable(tadpoleD1D2File,'Delimiter','comma','TreatAsEmpty',{''},'HeaderLines',0);
 % Read in the LB1_LB2 spreadsheet
 LB_Table = readtable(tadpoleLB1LB2File,'Delimiter','comma','TreatAsEmpty',{''},'HeaderLines',0);
@@ -103,7 +108,7 @@ end
 
 %% Generate the very simple forecast
 display('Generating forecast ...')
-%* Get the list of subjects to forecast from D1_D2 - the ordering is the
+%* Get the list of subjects to forecast from LB2 - the ordering is the
 %* same as in the submission template.
 lbInds = find(LB2_col);
 LB2_SubjList = unique(RID_Col(lbInds));
@@ -205,7 +210,9 @@ for i=1:N_LB2
         MCIp=0.1;
         ADp=0.8;
     else
+      if verbose
         disp(['Unrecognised status '; most_recent_CLIN_STAT{i}])
+      end
         CNp=0.33;
         MCIp=0.33;
         ADp=0.34;
@@ -246,7 +253,7 @@ end
 
 %% Now construct the forecast spreadsheet and output it.
 display(sprintf('Constructing the output spreadsheet %s ...', outputFile))
-startDate = datenum('01-Jan-2018');
+startDate = datenum('01-May-2010');
 
 submission_table =  cell2table(cell(N_LB2*nForecasts,12), ...
   'VariableNames', {'RID', 'ForecastMonth', 'ForecastDate', ...

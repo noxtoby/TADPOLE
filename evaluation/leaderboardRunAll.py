@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(usage='python3 leaderboardRunAll.py', descripti
 
 ''')
 
-TOKEN = open('/home/razvan/.dropboxTadpoleToken', 'r').read()[:-1]
+TOKEN = open(os.path.expanduser('~/.dropboxTadpoleToken'), 'r').read()[:-1]
 
 class DropboxObj:
 
@@ -146,13 +146,16 @@ tr.d1 td {
   nrFiles = len(forecastFiles)
   print(evalResults.shape)
   print(evalResults['MAUC'])
-  rankOrder = np.argsort(evalResults['MAUC'])[::-1] # sort them by MAUC, which is the first entry
-  for f in range(nrFiles):
+  for f in range(evalResults['MAUC'].shape[0]):
     if not np.isnan(evalResults['MAUC'].iloc[f]):
       text += '\n   <tr class="d%d"><td style="word-wrap: break-word">' % (f % 2)
       teamName = forecastFiles[f].split('.')[0][len('TADPOLE_Submission_Leaderboard_'):]
+      # print(f, type(evalResults['TEAMNAME'].iloc[f]))
+      # print(f, type('%f' % evalResults['RANK'].iloc[f]))
+      # print(f, [type(n) for n in evalResults.loc[f,'MAUC':'ventsCP']])
       text += '</td><td>'.join(
-        [teamName, '%d' % rankOrder[f]] + [ '%.2f' % n for n in evalResults.iloc[f]] +
+        [evalResults['TEAMNAME'].iloc[f], '%d' % evalResults['RANK'].iloc[f]] + [ '%.2f' % n for n in evalResults.loc[
+          f,'MAUC':'ventsCP']] +
         [fileDatesRemote[f].strftime('%Y-%m-%d %H:%M (UTC+0)')])
       text += '</td></tr>\n'
 
@@ -162,7 +165,6 @@ tr.d1 td {
   print(text)
   with open(htmlFile, "w") as f:
     f.write(text)
-
 
 def downloadLeaderboardSubmissions():
   htmlFile = 'leaderboardTable.html'
@@ -181,17 +183,20 @@ def downloadLeaderboardSubmissions():
 
   evalResFile = '%s/evalResAll.npz' % ldbSubmissionsFld
 
-  runPart = ['R', 'R']
+  runPart = ['L', 'R']
+
+  entriesList = range(nrEntries)
+  # entriesList = [0,1,2]
 
   if runPart[0] == 'R':
-    evalResults = pd.DataFrame(np.nan, index=range(nrEntries), columns=('MAUC', 'BCA',
+    evalResults = pd.DataFrame(np.nan, index=range(nrEntries), columns=('TEAMNAME', 'RANK' , 'MAUC', 'BCA',
     'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCP', 'ventsCP'))
     lb4Df = pd.read_csv('TADPOLE_LB4.csv')
     lb4Df = lb4Df[lb4Df['LB4'] == 1] # only keep the LB4 entries
     lb4Df.reset_index(drop=True, inplace=True)
     fileDatesRemote = []
-    for f in range(nrEntries):
-    # for f in [2]:
+    indexInTable = 0
+    for f in entriesList:
       fileName = fileListLdb[f]
       remotePath = '%s/%s' % (uploadsFldRemote, fileName)
       localPath = '%s/%s' % (ldbSubmissionsFld, fileName)
@@ -203,10 +208,27 @@ def downloadLeaderboardSubmissions():
       print('Evaluating %s' % fileName)
       forecastDf = pd.read_csv(localPath)
       try:
-        evalResults.iloc[f] = evalOneSubmission.evalOneSub(lb4Df, forecastDf)
+        evalResults.loc[f, ['MAUC', 'BCA',
+    'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCP', 'ventsCP']] = \
+        evalOneSubmission.evalOneSub(lb4Df, forecastDf)
       except :
         print('Error while processing submission %s' % fileName)
         pass
+
+      if not np.isnan(evalResults['MAUC'].iloc[f]):
+        teamName = fileName.split('.')[0][len('TADPOLE_Submission_Leaderboard_'):]
+        print('teamname ', teamName)
+        evalResults.loc[f, 'TEAMNAME'] = teamName
+
+    nanMask = np.isnan(evalResults['MAUC'])
+    evalResults = evalResults[np.logical_not(nanMask)]
+    evalResults.reset_index(drop = True, inplace = True)
+
+    # compute the ranks using MAUC
+    rankOrder = np.argsort(evalResults['MAUC'])[::-1]  # sort them by MAUC
+    for f in range(evalResults.shape[0]):
+      if not np.isnan(evalResults['MAUC'].iloc[f]):
+        evalResults['RANK'].iloc[f] = rankOrder[f]
 
 
     dataStruct = dict(evalResults=evalResults, fileDatesRemote=fileDatesRemote)
@@ -215,6 +237,12 @@ def downloadLeaderboardSubmissions():
     dataStruct = pickle.load(open(evalResFile, 'rb'))
     fileDatesRemote = dataStruct['fileDatesRemote']
     evalResults = dataStruct['evalResults']
+
+  # compute the ranks using MAUC
+  rankOrder = np.argsort(evalResults.as_matrix(columns=['MAUC']).reshape(-1))[::-1]  # sort them by MAUC
+  print('ranks', evalResults['MAUC'], rankOrder, evalResults.as_matrix(columns=['MAUC']).reshape(-1))
+  for f in range(evalResults.shape[0]):
+    evalResults['RANK'].iloc[f] = rankOrder[f]
 
   print('evalResults\n', evalResults)
 

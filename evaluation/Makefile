@@ -1,5 +1,6 @@
-# change this to the matlab path of the local computer
-MATLAB_PATH = ~/programs/MATLAB/bin/matlab
+# change this to the matlab path on your computer
+MATLAB_PATH = /usr/local/bin/matlab
+#MATLAB_PATH = ~/programs/MATLAB/bin/matlab
 #MATLAB_PATH = /Applications/MATLAB_R2015b.app/bin/matlab
 
 ######## pipeline for generating and evaluating a proper TADPOLE submission ###########

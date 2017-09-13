@@ -5,3 +5,6 @@
 evaluation/leaderboard_table.html
 *#
 *__pycache__
+.idea/
+*.bck
+evaluation/leaderboardSubmissions/
