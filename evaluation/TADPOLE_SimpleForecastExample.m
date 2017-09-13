@@ -142,39 +142,44 @@ ADAS13_typical = 12;
 ADAS13_typical_lower = ADAS13_typical - 10;
 ADAS13_typical_upper = ADAS13_typical + 10;
 
-for i=1:N_D2
-    
-    % Find the most recent exam for this subject
-    subj_rows = find(RID_Col==D2_SubjList(i));
+for i=1:N_D2 % Each subject in D2
+    %* Rows in D2 corresponding to Subject D2_SubjList(i)
+    subj_rows = find(RID_Col==D2_SubjList(i) & D2_col);
     subj_exam_dates = ExamMonth_Col(subj_rows);
-    [a, b] = sort(subj_exam_dates);
-    most_recent_exam_ind = subj_rows(max(b));
+
+    % Non-empty data among these rows
+    exams_with_CLIN_STAT = ~strcmpi(CLIN_STAT_Col(subj_rows),'');
+    exams_with_ADAS13    = ADAS13_Col(subj_rows)>0;
+    exams_with_ventsv    = Ventricles_ICV_Col(subj_rows)>0;
+    %exams_with_allData   = exams_with_CLIN_STAT & exams_with_ADAS13 & exams_with_ventsv;
     
-    %* Identify most recent data
+    %* Extract most recent non-empty data
     % 1. Clinical status
-    most_recent_CLIN_STAT{i} = CLIN_STAT_Col(most_recent_exam_ind);
-    % 2. ADAS13 score
-    exams_with_ADAS13 = find(ADAS13_Col(subj_rows)>0);
-    if(~isempty(exams_with_ADAS13))
-        [a, b] = max(subj_exam_dates(exams_with_ADAS13));
-        ind = subj_rows(exams_with_ADAS13(b)); % Index of most recent visit that has an ADAS13 score
-        most_recent_ADAS13(i) = ADAS13_Col(ind);
-    else
-        % The subject has no ADAS13 scores in the data set.
-        most_recent_ADAS13(i) = -1;
+    if sum(exams_with_CLIN_STAT)>=1 % Subject has a Clinical status
+      % Index of most recent visit with a Clinical status
+      ind = subj_rows( subj_exam_dates(exams_with_CLIN_STAT) == max(subj_exam_dates(exams_with_CLIN_STAT)) );
+      most_recent_CLIN_STAT{i} = CLIN_STAT_Col(ind);
+    else % Subject has no Clinical statuses in the data set
+      most_recent_CLIN_STAT{i} = '';
     end
-    % 3. Most recent Ventricles volume
-    exams_with_ventsv = find(Ventricles_ICV_Col(subj_rows)>0);
-    if(~isempty(exams_with_ventsv))
-        [a, b] = max(subj_exam_dates(exams_with_ventsv));
-        ind = subj_rows(exams_with_ventsv(b)); % Index of most recent visit that has a ventricle volume
-        most_recent_Ventricles_ICV(i) = Ventricles_ICV_Col(ind);
-    else
-        % The subject has no ventricle volume measurement in the data set.
+    % 2. ADAS13 score
+    if sum(exams_with_ADAS13)>=1 % Subject has an ADAS13 score
+      % Index of most recent visit with an ADAS13 score
+      ind = subj_rows( subj_exam_dates(exams_with_ADAS13) == max(subj_exam_dates(exams_with_ADAS13)) ); 
+      most_recent_ADAS13(i) = ADAS13_Col(ind);
+    else % Subject has no ADAS13 scores in the data set
+      most_recent_ADAS13(i) = -1;
+    end
+    % 3. Most recent ventricles volume measurement
+    if sum(exams_with_ventsv)>=1 % Subject has a ventricles volume recorded
+      % Index of most recent visit with a ventricles volume
+      ind = subj_rows( subj_exam_dates(exams_with_ventsv) == max(subj_exam_dates(exams_with_ventsv)) );
+      most_recent_Ventricles_ICV(i) = Ventricles_ICV_Col(ind);
+    else % Subject has no ventricle volume measurement in the data set
         most_recent_Ventricles_ICV(i) = -1;
     end
-    
-    %* Print out some stuff if in debug mode (set display_info=1 above).
+
+    %* "Debug mode": prints out some stuff (set display_info=1 above)
     if(display_info)
         ExamMonth_Col(subj_rows)
         CLIN_STAT_Col(subj_rows)
@@ -183,58 +188,46 @@ for i=1:N_D2
         [i most_recent_CLIN_STAT{i} most_recent_ADAS13(i) most_recent_Ventricles_ICV(i)]
     end
     
-    %* Construct status forecast
-    % - Uses predefined likelihoods for each current status.
+    %*** Construct example forecasts
+    %* Clinical status forecast: predefined likelihoods per current status
     if(strcmp(most_recent_CLIN_STAT{i}, 'NL'))
-        CNp=0.75;
-        MCIp=0.15;
-        ADp=0.1;
+        CNp=0.75;  MCIp=0.15;  ADp=0.1;
     elseif(strcmp(most_recent_CLIN_STAT{i}, 'MCI'))
-        CNp=0.1;
-        MCIp=0.5;
-        ADp=0.4;
+        CNp=0.1;   MCIp=0.5;   ADp=0.4;
     elseif(strcmp(most_recent_CLIN_STAT{i}, 'Dementia'))
-        CNp=0.1;
-        MCIp=0.1;
-        ADp=0.8;
+        CNp=0.1;   MCIp=0.1;   ADp=0.8;
     else
-        disp(['Unrecognised status '; most_recent_CLIN_STAT{i}])
-        CNp=0.33;
-        MCIp=0.33;
-        ADp=0.34;
+        CNp=0.33;  MCIp=0.33;  ADp=0.34;
+        if verbose
+          disp(['Unrecognised status '; most_recent_CLIN_STAT{i}])
+        end
     end
     CLIN_STAT_forecast(i,:,1) = CNp;
     CLIN_STAT_forecast(i,:,2) = MCIp;
     CLIN_STAT_forecast(i,:,3) = ADp;
-
-    %* Construct ADAS13 forecast 
-    % - Copies most recent score. Uses a default confidence interval.
+    %* ADAS13 forecast: = most recent score, default confidence interval
     if(most_recent_ADAS13(i)>=0)
         ADAS13_forecast(i,:,1) = most_recent_ADAS13(i);
         ADAS13_forecast(i,:,2) = max([0, most_recent_ADAS13(i)-1]); % Set to zero if best-guess less than 1.
         ADAS13_forecast(i,:,3) = most_recent_ADAS13(i)+1;
-    else
-        % Subject has no history of ADAS13 measurement, so we'll take a
-        % typical score of 12 with wide confidence interval +/-10.
+    else % Subject has no history of ADAS13 measurement, so we'll take a
+         % typical score of 12 with wide confidence interval +/-10.
         ADAS13_forecast(i,:,1) = ADAS13_typical;
         ADAS13_forecast(i,:,2) = ADAS13_typical_lower;
         ADAS13_forecast(i,:,3) = ADAS13_typical_upper;
     end
-    
-    %* Construct Ventricles volume forecast
-    % - Copies most recent measurement. Uses a default confidence interval.
+    %* Ventricles volume forecast: = most recent measurement, default confidence interval
     if(most_recent_Ventricles_ICV(i)>0)
         Ventricles_ICV_forecast(i,:,1) = most_recent_Ventricles_ICV(i);
         Ventricles_ICV_forecast(i,:,2) = most_recent_Ventricles_ICV(i) - Ventricles_ICV_default_50pcMargin;
         Ventricles_ICV_forecast(i,:,3) = most_recent_Ventricles_ICV(i) + Ventricles_ICV_default_50pcMargin;
-    else
-        % Subject has no imaging history, so we'll take a typical ventricle
-        % volume of 25000 with wide confidence interval +/-20000.
+    else % Subject has no imaging history, so we'll take a typical 
+         % ventricles volume of 25000 & wide confidence interval +/-20000
         Ventricles_ICV_forecast(i,:,1) = Ventricles_ICV_typical;
         Ventricles_ICV_forecast(i,:,2) = Ventricles_ICV_typical - Ventricles_ICV_broad_50pcMargin;
         Ventricles_ICV_forecast(i,:,3) = Ventricles_ICV_typical + Ventricles_ICV_broad_50pcMargin;
-    end    
-        
+    end
+    
 end
 
 %% Now construct the forecast spreadsheet and output it.
