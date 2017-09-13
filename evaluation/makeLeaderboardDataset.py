@@ -10,10 +10,13 @@ from argparse import RawTextHelpFormatter
 
 parser = argparse.ArgumentParser(
   description=r'''
+  TADPOLE Challenge 2017: http://tadpole.grand-challenge.org
+  
   Script that constructs the leaderboard datasets.
 
   Author: Razvan V. Marinescu, razvan.marinescu.14@ucl.ac.uk
-
+  (Honourable mention: Neil P. Oxtoby)
+  
  ''', formatter_class=RawTextHelpFormatter
 )
 
@@ -36,11 +39,11 @@ def makeLBcolumns(filePath, adniMergeDf):
   # LB2 - prelim prediction set
   # LB4 - prelim test set
 
-  #  LB2
+  # LB2
   # contains CN and MCI subjects from ADNI1 who have at least one visit in ADNI GO/2
   # these subjects must be CN or MCI at last timepoint in ADNI1
   # LB4
-  # contains same subjects as D1_2, just the next timepoint (from ADNI GO/2)
+  # contains same subjects as LB2, just the next timepoint (from ADNI GO/2)
   # LB1 contains all the remaining subjects
 
   unqRids = np.unique(adniMergeDf['RID'])
@@ -182,7 +185,7 @@ lbSubmissionDf = pd.DataFrame('', index=range(nrUnqRIDs*nrOfForecastsPerSubj), c
 
 # lastDateLB4Str = np.max(lb4Df['CognitiveAssessmentDate'][lb4Df['LB4'] == 1])
 # print('lastDateLB4Str', lastDateLB4Str) # last date for LB2 is 2011-04-20, most finish at 2010-04-xx
-# fist date for LB4 is 2010-05-14
+# first date for LB4 is 2010-05-14
 # set the forecasts to start from 2010-05.
 # There will be very few subjects in LB2 who have visits after this date, but that is ok,
 # since the evaluation script will only use the predictions closest to the LB4 visits.

@@ -3,27 +3,21 @@
 #MATLAB_PATH = ~/programs/MATLAB/bin/matlab
 MATLAB_PATH = /Applications/MATLAB_R2015b.app/bin/matlab
 
-######## pipeline for generating and evaluating a proper TADPOLE submission ###########
+######## pipeline for generating and evaluating a valid TADPOLE submission ###########
 eval:
 	# First save TADPOLE_D1_D2.csv in the parent directory
 	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
 
 	# Generate a simple forecast from D2 and save it as TADPOLE_Submission_SimpleForecast1.csv ...
-	# Replace SimpleForecast1 with your team name and submission index
+	# In TADPOLE_SimpleForecastExample.m, you should replace SimpleForecast1 with your team name and submission index, e.g., TADPOLE_Submission_TeamAwesome3.csv
 	$(MATLAB_PATH) -nodesktop -nosplash -r "cd $(CURDIR); TADPOLE_SimpleForecastExample; exit";
 
 	# Then make a dummy D4 dataset, which would be similar in format to the real D4
 	python3 makeDummyD4.py;
 
-	# Evaluate the user forecasts from SimpleForecastExampleFromD2.csv against D4_dummy.csv using the evaluation function
+	# Evaluate the user forecasts from TADPOLE_Submission_SimpleForecast1.csv against D4_dummy.csv using the evaluation function
+	# Be sure to change the spreadsheet filename here to match the one in TADPOLE_SimpleForecastExample.m (e.g. as above: TADPOLE_Submission_TeamAwesome3.csv)
 	python3 evalOneSubmission.py --d4File D4_dummy.csv --forecastFile TADPOLE_Submission_SimpleForecast1.csv;
-
-    #### Expected numbers for our generated dataset. These don't apply to the leaderboard submission
-    #### or other types of predictive models or D4 dummy datasets
-	# Clinical diagnosis metrics: should give around 0.5 since they were generated randomly
-	# MAE should be around sqrt(2/pi)*sigma, which is 1.190 for ADAS and 0.00065 for Ventricles
-	# WES should be similar to MAE, since the coefficients are almost equal.
-	# CP should be around 0.5 for both, but ADAS13 is lower due to the fact that negative scores that are rounded to zero
 
 ########### pipeline for generating and evaluating a leaderboard submission ##########
 leaderboard:
@@ -31,17 +25,17 @@ leaderboard:
 	python3 makeLeaderboardDataset.py;
 
 	# Then generate a simple forecast from LB2, and save it as TADPOLE_Submission_Leaderboard_UCLTest1.csv ...
-	# Replace UCLTest1 with your team name and submission index
-	# NOTE: Change the Matlab path above as required. Otherwise load the script manually in MATLAB and run it.
+	# In TADPOLE_SimpleForecastExampleLeaderboard.m, you should replace SimpleForecast1 with your team name and submission index, e.g., TADPOLE_Submission_Leaderboard_TeamAwesome3.csv
+	# NOTE: Change the Matlab path above as required. Otherwise load the TADPOLE_SimpleForecastExampleLeaderboard.m script manually in MATLAB and run it.
 	$(MATLAB_PATH) -nodesktop -nosplash -r "cd $(CURDIR); TADPOLE_SimpleForecastExampleLeaderboard; exit";
 
 	# Evaluate the user forecasts from TADPOLE_Submission_Leaderboard_UCLTest1.csv against TADPOLE_LB4.csv using the evaluation function
-	python3 evalOneSubmission.py --leaderboard --d4File TADPOLE_LB4.csv --forecastFile TADPOLE_Submission_Leaderboard_UCLTest1.csv;
+	python3 evalOneSubmission.py --leaderboard --d4File TADPOLE_LB4.csv --forecastFile TADPOLE_Submission_Leaderboard_SimpleForecast1.csv;
 
-	# submit TADPOLE_Submission_Leaderboard_UCLTest1.csv to TADPOLE website 
+	# Submit (renamed version of) TADPOLE_Submission_Leaderboard_SimpleForecast1.csv to TADPOLE website via the Submit page
 
 clear:
-	rm -f D4_dummy.csv TADPOLE_LB1_LB2.csv TADPOLE_Submission_SimpleForecast1.csv TADPOLE_LB4.csv TADPOLE_Submission_Leaderboard_UCLTest1.csv leaderboard_table.html TADPOLE_Submission_Leaderboard_TeamName.csv
+	rm -f D4_dummy.csv TADPOLE_LB1_LB2.csv TADPOLE_Submission_SimpleForecast1.csv TADPOLE_LB4.csv TADPOLE_Submission_Leaderboard_SimpleForecast1.csv leaderboard_table.html TADPOLE_Submission_Leaderboard_SimpleForecast1.csv
 
 
 
@@ -50,7 +44,7 @@ clear:
 ###### DEVELOPERS ONLY ##########
 
 copyToPublicRepo:
-	cp evalOneSubmission.py leaderboardRunAll.py SimpleForecastExampleFromD2.m makeDummyD4.py makeLeaderboardDataset.py SimpleForecastExampleFromLB2.m MAUC.py Makefile ../neil_repo/evaluation
+	cp evalOneSubmission.py leaderboardRunAll.py TADPOLE_SimpleForecastExample.m makeDummyD4.py makeLeaderboardDataset.py TADPOLE_SimpleForecastExampleLeaderboard.m MAUC.py Makefile ../neil_repo/evaluation
 
 processLeaderboardSubmissions:
 	python3 leaderboardRunAll.py
