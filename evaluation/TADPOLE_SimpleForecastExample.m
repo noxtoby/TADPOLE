@@ -39,6 +39,9 @@ if errorFlag
   exit;
 end
 
+% choose whether to display warning messages
+verbose = 0;
+
 %* Read in the D1_D2 spreadsheet.
 TADPOLE_Table = readtable(tadpoleD1D2File,'Delimiter','comma','TreatAsEmpty',{''},'HeaderLines',0);
 
