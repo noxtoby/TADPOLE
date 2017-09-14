@@ -183,7 +183,7 @@ def downloadLeaderboardSubmissions():
 
   evalResFile = '%s/evalResAll.npz' % ldbSubmissionsFld
 
-  runPart = ['L', 'R']
+  runPart = ['R', 'R']
 
   entriesList = range(nrEntries)
   # entriesList = [0,1,2]
