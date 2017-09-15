@@ -223,17 +223,17 @@ def evalOneSub(d4Df, forecastDf):
   ventsCoeffs = 1/(ventriclesEstimUp - ventriclesEstimLo)
   ventsWES = np.sum(ventsCoeffs * np.abs(ventriclesEstim - trueVentsFilt))/np.sum(ventsCoeffs)
 
-  #### Coverage Probability (CP) ####
+  #### Coverage Probability Accuracy (CPA) ####
 
   adasCovProb = np.sum((adasEstimLo < trueADASFilt) &
                        (adasEstimUp > trueADASFilt))/trueADASFilt.shape[0]
-  adasCP = adasCovProb # don't do |adasCP - 0.5|
+  adasCPA = np.abs(adasCovProb - 0.5)
 
   ventsCovProb = np.sum((ventriclesEstimLo < trueVentsFilt) &
                         (ventriclesEstimUp > trueVentsFilt))/trueVentsFilt.shape[0]
-  ventsCP = ventsCovProb
+  ventsCPA = np.abs(ventsCovProb - 0.5)
 
-  return mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCP, ventsCP
+  return mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA
 
 if __name__ == "__main__":
 
@@ -263,7 +263,7 @@ if __name__ == "__main__":
   subDf = pd.read_csv(forecastFile)
 
   # don't catch the exception here, as this main function is used to test if the submission if correct
-  mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCP, ventsCP = \
+  mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA = \
     evalOneSub(d4Df, subDf)
 
   print('########### Metrics for clinical status ##################')
@@ -273,8 +273,8 @@ if __name__ == "__main__":
   print('adasMAE', adasMAE, 'ventsMAE', ventsMAE)
   print('\n########### Weighted Error Score (WES) ##################')
   print('adasWES', adasWES, 'ventsWES', ventsWES)
-  print('\n########### Coverage Probability ##################')
-  print('adasCP', adasCP, 'ventsCP', ventsCP)
+  print('\n########### Coverage Probability Accuracy ##################')
+  print('adasCPA', adasCPA, 'ventsCPA', ventsCPA)
 
   print('\n\n########### File is ready for submission to TADPOLE ###########')
 

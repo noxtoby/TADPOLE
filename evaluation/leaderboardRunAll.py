@@ -141,7 +141,7 @@ tr.d1 td {
 '''
   text += trStartHead
   text += '</td><td>'.join(['TEAM NAME', 'RANK', 'MAUC', 'BCA', 'ADAS MAE', 'VENTS MAE',
-    'ADAS WES', 'VENTS WES', 'ADAS CP', 'VENTS CP', 'DATE'])
+    'ADAS WES', 'VENTS WES', 'ADAS CPA', 'VENTS CPA', 'DATE'])
   text += trEndHead + '<tbody>'
   nrFiles = len(forecastFiles)
   print(evalResults.shape)
@@ -190,7 +190,7 @@ def downloadLeaderboardSubmissions():
 
   if runPart[0] == 'R':
     evalResults = pd.DataFrame(np.nan, index=range(nrEntries), columns=('TEAMNAME', 'RANK' , 'MAUC', 'BCA',
-    'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCP', 'ventsCP'))
+    'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCPA', 'ventsCPA'))
     lb4Df = pd.read_csv('TADPOLE_LB4.csv')
     lb4Df = lb4Df[lb4Df['LB4'] == 1] # only keep the LB4 entries
     lb4Df.reset_index(drop=True, inplace=True)
@@ -209,7 +209,7 @@ def downloadLeaderboardSubmissions():
       forecastDf = pd.read_csv(localPath)
       try:
         evalResults.loc[f, ['MAUC', 'BCA',
-    'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCP', 'ventsCP']] = \
+    'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCPA', 'ventsCPA']] = \
         evalOneSubmission.evalOneSub(lb4Df, forecastDf)
       except :
         print('Error while processing submission %s' % fileName)
@@ -229,7 +229,6 @@ def downloadLeaderboardSubmissions():
     for f in range(evalResults.shape[0]):
       if not np.isnan(evalResults['MAUC'].iloc[f]):
         evalResults['RANK'].iloc[f] = rankOrder[f]
-
 
     dataStruct = dict(evalResults=evalResults, fileDatesRemote=fileDatesRemote)
     pickle.dump(dataStruct, open(evalResFile, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
