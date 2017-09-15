@@ -153,6 +153,7 @@ tr.d1 td {
   nrFiles = len(forecastFiles)
   print(evalResults.shape)
   print(evalResults['MAUC'])
+  formatStrsMeasures = ['%.2f','%.2f','%.2f','%.1e','%.2f','%.1e','%.2f','%.2f']
   for f in range(evalResults['MAUC'].shape[0]):
     if not np.isnan(evalResults['MAUC'].iloc[f]):
       text += '\n   <tr class="d%d"><td style="word-wrap: break-word">' % (f % 2)
@@ -161,8 +162,8 @@ tr.d1 td {
       # print(f, type('%f' % evalResults['RANK'].iloc[f]))
       # print(f, [type(n) for n in evalResults.loc[f,'MAUC':'ventsCP']])
       text += '</td><td>'.join(
-        [evalResults['TEAMNAME'].iloc[f], '%d' % evalResults['RANK'].iloc[f]] + [ '%.2f' % n for n in evalResults.loc[
-          f,'MAUC':'ventsCPA']] +
+        [evalResults['TEAMNAME'].iloc[f], '%d' % evalResults['RANK'].iloc[f]] +
+        [ strFmt % n for strFmt, n in zip(formatStrsMeasures, evalResults.loc[f,'MAUC':'ventsCPA'])] +
         [fileDatesRemote[f].strftime('%Y-%m-%d %H:%M (UTC+0)')])
       text += '</td></tr>\n'
 
@@ -230,10 +231,11 @@ def downloadLeaderboardSubmissions():
     evalResults.reset_index(drop = True, inplace = True)
 
     # compute the ranks using MAUC
-    rankOrder = np.argsort(evalResults['MAUC'])[::-1]  # sort them by MAUC
+    rankOrder = np.argsort(evalResults.as_matrix(columns = ['MAUC']).reshape(-1))[::-1]  # sort them by MAUC
+    rankOrder += 1  # make them start from 1
+    print('ranks', evalResults['MAUC'], rankOrder, evalResults.as_matrix(columns = ['MAUC']).reshape(-1))
     for f in range(evalResults.shape[0]):
-      if not np.isnan(evalResults['MAUC'].iloc[f]):
-        evalResults['RANK'].iloc[f] = rankOrder[f]
+      evalResults.loc[f, 'RANK'] = rankOrder[f]
 
     dataStruct = dict(evalResults=evalResults, fileDatesRemote=fileDatesRemote)
     pickle.dump(dataStruct, open(evalResFile, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
@@ -241,12 +243,6 @@ def downloadLeaderboardSubmissions():
     dataStruct = pickle.load(open(evalResFile, 'rb'))
     fileDatesRemote = dataStruct['fileDatesRemote']
     evalResults = dataStruct['evalResults']
-
-  # compute the ranks using MAUC
-  rankOrder = np.argsort(evalResults.as_matrix(columns=['MAUC']).reshape(-1))[::-1]  # sort them by MAUC
-  print('ranks', evalResults['MAUC'], rankOrder, evalResults.as_matrix(columns=['MAUC']).reshape(-1))
-  for f in range(evalResults.shape[0]):
-    evalResults['RANK'].iloc[f] = rankOrder[f]
 
   print('evalResults\n', evalResults)
 

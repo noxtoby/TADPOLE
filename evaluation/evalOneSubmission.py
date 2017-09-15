@@ -41,13 +41,15 @@ def calcBCA(estimLabels, trueLabels, nrClasses):
 
       # sometimes the sensitivity of specificity can be NaN, if the user doesn't forecast one of the classes.
       # In this case we assume a default value for sensitivity/specificity
-      sensitivity = TP/(TP+FN)
-      if np.isnan(sensitivity):
+      if (TP+FN) == 0:
         sensitivity = 0.5
+      else:
+        sensitivity = TP/(TP+FN)
 
-      specificity = TN/(TN+FP)
-      if np.isnan(specificity):
+      if (TN+FP) == 0:
         specificity = 0.5
+      else:
+        specificity = TN/(TN+FP)
 
       bcaCurr = 0.5*(sensitivity+specificity)
       bcaAll += [bcaCurr]
