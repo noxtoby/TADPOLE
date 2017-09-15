@@ -20,6 +20,12 @@ parser = argparse.ArgumentParser(usage='python3 leaderboardRunAll.py', descripti
 
 ''')
 
+parser.add_argument('--runPart', dest='runPart', default='RR',
+                   help='which part of the script to run. Usually either LR or RR, where '
+                        'LR means "load first part, run second part" while RR means run both parts')
+
+args = parser.parse_args()
+
 TOKEN = open(os.path.expanduser('~/.dropboxTadpoleToken'), 'r').read()[:-1]
 
 class DropboxObj:
@@ -120,6 +126,7 @@ tr.d1 td {
 }
 </style>
 '''
+  text += 'Table last updated on %s' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M (UTC+0)') )
   text += '<table  class="sortable smallfont" style="width: 880px; table-layout: fixed;"  >\n'
   text += r'''
   <col width="60">
@@ -155,7 +162,7 @@ tr.d1 td {
       # print(f, [type(n) for n in evalResults.loc[f,'MAUC':'ventsCP']])
       text += '</td><td>'.join(
         [evalResults['TEAMNAME'].iloc[f], '%d' % evalResults['RANK'].iloc[f]] + [ '%.2f' % n for n in evalResults.loc[
-          f,'MAUC':'ventsCP']] +
+          f,'MAUC':'ventsCPA']] +
         [fileDatesRemote[f].strftime('%Y-%m-%d %H:%M (UTC+0)')])
       text += '</td></tr>\n'
 
@@ -183,12 +190,10 @@ def downloadLeaderboardSubmissions():
 
   evalResFile = '%s/evalResAll.npz' % ldbSubmissionsFld
 
-  runPart = ['R', 'R']
-
   entriesList = range(nrEntries)
   # entriesList = [0,1,2]
 
-  if runPart[0] == 'R':
+  if args.runPart[0] == 'R':
     evalResults = pd.DataFrame(np.nan, index=range(nrEntries), columns=('TEAMNAME', 'RANK' , 'MAUC', 'BCA',
     'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCPA', 'ventsCPA'))
     lb4Df = pd.read_csv('TADPOLE_LB4.csv')

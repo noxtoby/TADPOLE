@@ -174,7 +174,11 @@ lb4Df.reset_index(drop=True, inplace=True)
 lb4Df.to_csv('TADPOLE_LB4.csv',index=False)
 print('TADPOLE_LB4.csv created in local folder')
 
-# also make Leaderboard submission file
+
+
+###### Make the Leaderboard submission skeleton (or template) ##################
+###### This file is not used by other scripts (and thus not necessary), ########
+######  it is for participants' reference only #################################
 
 nrOfForecastsPerSubj = 7*12 # 7 years * 12 months
 unqRIDs = np.unique(lb12Df['RID'][lb12Df['LB2'] == 1])
