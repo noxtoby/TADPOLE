@@ -259,6 +259,7 @@ Ventricles_ICV_forecast = round(1e9*Ventricles_ICV_forecast)/1e9;
 
 %% Now construct the forecast spreadsheet and output it.
 display(sprintf('Constructing the output spreadsheet %s ...', outputFile))
+% the start date for the leaderboard should be 1 May 2010.
 startDate = datenum('01-May-2010');
 
 submission_table =  cell2table(cell(N_LB2*nForecasts,12), ...
