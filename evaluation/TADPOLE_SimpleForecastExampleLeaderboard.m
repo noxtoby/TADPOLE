@@ -129,7 +129,7 @@ N_LB2 = length(LB2_SubjList);
 % data. This is because some ADNI2 subjects in LB4 have visits as long as
 % 7 years after their last ADNI1 visit in LB2
 
-%* Create arrays to contain the 84 monthly forecasts for each D2 subject
+%* Create arrays to contain the 84 monthly forecasts for each LB2 subject
 nForecasts = 7*12; % forecast 7 years (84 months).
 % 1. Clinical status forecasts
 %    i.e. relative likelihood of NL, MCI, and Dementia (3 numbers)
@@ -254,6 +254,9 @@ for i=1:N_LB2 % Each subject in LB2
     end
 end
 
+% Round to 9 decimal places to match python sample code
+Ventricles_ICV_forecast = round(1e9*Ventricles_ICV_forecast)/1e9;
+
 %% Now construct the forecast spreadsheet and output it.
 display(sprintf('Constructing the output spreadsheet %s ...', outputFile))
 startDate = datenum('01-May-2010');
@@ -331,12 +334,15 @@ t = Ventricles_ICV_forecast(:,:,3)';
 col = submission_table.Properties.VariableNames(col);
 submission_table{:,col} = t(:);
 
-%* Convert all numbers to strings
+%* Convert all numbers to strings - only required for MATLAB
 hdr = submission_table.Properties.VariableNames;
 for k=1:length(hdr)
   if ~iscell(submission_table.(hdr{k}))
-    %submission_table{1:10,hdr{k}} = varfun(@num2str,submission_table{1:10,hdr{k}},'OutPutFormat','cell');
-    submission_table.(hdr{k}) = strrep(cellstr(num2str(submission_table{:,hdr{k}})),' ','');
+    if k>9
+      submission_table.(hdr{k}) = strrep(cellstr(num2str(submission_table{:,hdr{k}},'%.9f')),' ','');
+    else
+      submission_table.(hdr{k}) = strrep(cellstr(num2str(submission_table{:,hdr{k}})),' ','');
+    end
   end
 end
 
