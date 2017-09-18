@@ -121,7 +121,7 @@ tr.d0 td {
   color: black;
 }
 tr.d1 td {
-  background-color: #e6e6e6;
+  background-color: #ffffff;
   color: black;
 }
 </style>
