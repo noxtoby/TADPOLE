@@ -129,8 +129,8 @@ tr.d1 td {
   text += 'Table last updated on %s' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M (UTC+0)') )
   text += '<table  class="sortable smallfont" style="width: 880px; table-layout: fixed;"  >\n'
   text += r'''
-  <col width="60">
-  <col width="35">
+  <col width="30">
+  <col width="70">
   <col width="35">
   <col width="30">
   <col width="40">
@@ -147,22 +147,24 @@ tr.d1 td {
 </thead>
 '''
   text += trStartHead
-  text += '</td><td>'.join(['TEAM NAME', 'RANK', 'MAUC', 'BCA', 'ADAS MAE', 'VENTS MAE',
+  text += '</td><td>'.join(['RANK', 'TEAM NAME', 'MAUC', 'BCA', 'ADAS MAE', 'VENTS MAE',
     'ADAS WES', 'VENTS WES', 'ADAS CPA', 'VENTS CPA', 'DATE'])
   text += trEndHead + '<tbody>'
   nrFiles = len(forecastFiles)
-  print(evalResults.shape)
-  print(evalResults['MAUC'])
-  formatStrsMeasures = ['%.2f','%.2f','%.2f','%.1e','%.2f','%.1e','%.2f','%.2f']
+  # print(evalResults.shape)
+  # print(evalResults['MAUC'])
+  formatStrsMeasures = ['%.3f','%.3f','%.3f','%.2e','%.3f','%.2e','%.3f','%.3f']
   for f in range(evalResults['MAUC'].shape[0]):
     if not np.isnan(evalResults['MAUC'].iloc[f]):
-      text += '\n   <tr class="d%d"><td style="word-wrap: break-word">' % (f % 2)
+      text += '\n   <tr class="d%d">' % (f % 2)
       teamName = forecastFiles[f].split('.')[0][len('TADPOLE_Submission_Leaderboard_'):]
       # print(f, type(evalResults['TEAMNAME'].iloc[f]))
       # print(f, type('%f' % evalResults['RANK'].iloc[f]))
       # print(f, [type(n) for n in evalResults.loc[f,'MAUC':'ventsCP']])
+
+      text += '<td>%d</td>'  % evalResults['RANK'].iloc[f]
+      text += '<td style="word-wrap: break-word">%s</td><td>' % evalResults['TEAMNAME'].iloc[f]
       text += '</td><td>'.join(
-        [evalResults['TEAMNAME'].iloc[f], '%d' % evalResults['RANK'].iloc[f]] +
         [ strFmt % n for strFmt, n in zip(formatStrsMeasures, evalResults.loc[f,'MAUC':'ventsCPA'])] +
         [fileDatesRemote[f].strftime('%Y-%m-%d %H:%M (UTC+0)')])
       text += '</td></tr>\n'
@@ -230,12 +232,12 @@ def downloadLeaderboardSubmissions():
     evalResults = evalResults[np.logical_not(nanMask)]
     evalResults.reset_index(drop = True, inplace = True)
 
-    # compute the ranks using MAUC
-    rankOrder = np.argsort(evalResults.as_matrix(columns = ['MAUC']).reshape(-1))[::-1]  # sort them by MAUC
-    rankOrder += 1  # make them start from 1
-    print('ranks', evalResults['MAUC'], rankOrder, evalResults.as_matrix(columns = ['MAUC']).reshape(-1))
-    for f in range(evalResults.shape[0]):
-      evalResults.loc[f, 'RANK'] = rankOrder[f]
+    # # compute the ranks using MAUC
+    # rankOrder = np.argsort(evalResults.as_matrix(columns = ['MAUC']).reshape(-1))[::-1]  # sort them by MAUC
+    # rankOrder += 1  # make them start from 1
+    # print('ranks', evalResults['MAUC'], rankOrder, evalResults.as_matrix(columns = ['MAUC']).reshape(-1))
+    # for f in range(evalResults.shape[0]):
+    #   evalResults.loc[f, 'RANK'] = rankOrder[f]
 
     dataStruct = dict(evalResults=evalResults, fileDatesRemote=fileDatesRemote)
     pickle.dump(dataStruct, open(evalResFile, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
@@ -244,7 +246,20 @@ def downloadLeaderboardSubmissions():
     fileDatesRemote = dataStruct['fileDatesRemote']
     evalResults = dataStruct['evalResults']
 
-  print('evalResults\n', evalResults)
+  # compute the ranks using MAUC
+  rankOrder = np.argsort(evalResults.as_matrix(columns=['MAUC']).reshape(-1))[::-1]  # sort them by MAUC
+  rankOrder = np.argsort(rankOrder) + 1  # make them start from 1
+  print('ranks', evalResults['MAUC'], rankOrder, evalResults.as_matrix(columns=['MAUC']).reshape(-1), np.argsort(rankOrder))
+  for f in range(evalResults.shape[0]):
+    evalResults.loc[f, 'RANK'] = rankOrder[f]
+
+  print('evalResults before\n', evalResults)
+
+  evalResults = evalResults.sort_values(by=['MAUC', 'BCA'],ascending=False)
+  evalResults = evalResults.reset_index(drop=True)
+
+  print('evalResults after\n', evalResults)
+
 
   htmlFileFullPathRemote = '%s/%s' % (dropboxRemoteFolder, htmlFile)
   htmlFileFullPathLocal = '%s/%s' % (ldbSubmissionsFld, htmlFile)
