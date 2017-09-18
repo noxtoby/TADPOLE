@@ -1,9 +1,32 @@
-% TADPOLE_D3_completeVisit.m (Updated!) Identifying test subjects for TADPOLE challenge 2017
+% TADPOLE_D3_completeVisit.m (Updated!) Identifying potential test subjects for TADPOLE challenge 2017
 %
-% Place in same location as TADPOLE_D1_D2.csv spreadsheet
+% The original D3 simply took the most recent visit for individuals in D2
+% (prospective rollovers into ADNI3).
+% There was a lot of missing data, for various reasons.
 %
-% Neil Oxtoby, UCL, September 2017
+% This updated version of D3 finds the most recent visit *without missing
+% data*.
+%  Explicitly, this script searches back in time through the D2 data set,
+%  identifying visits where the individual has data for each TADPOLE
+%  Challenge target variable: DX, ADAS13, and Ventricles.
+%
+% You don't need to run this script if you've downloaded the latest 
+% TADPOLE data sets from the ADNI/LONI website.
+%
+% ============
+% Date:
+%   18 September 2017
+% Author: 
+%   Neil P. Oxtoby
+%   University College London
+%
+% For more information on TADPOLE Challenge:
+%   http://tadpole.grand-shallenge.org 
 
+% To regenerate the updated D3, place this script in the same location as
+% the TADPOLE_D1_D2.csv spreadsheet downloaded from the LONI website.
+
+%%
 %* Preliminaries
 writeTables = true;
 startOfADNI1  = '2005-07-01';
