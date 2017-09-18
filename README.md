@@ -9,8 +9,7 @@ Git repository: https://github.com/noxtoby/TADPOLE
 
 This collection of code has two purposes:
 1. Helper scripts to assist the participants of [TADPOLE Challenge 2017](http://tadpole.grand-challenge.org) to generate submissions for the challenge.
-2. For those interested in how we generated the TADPOLE standard data sets, we've made the scripts available here.
-3. For those interested in how we will evaluate submissions, we've made the scripts available here.
+2. For those interested in how we generated the TADPOLE standard data sets, or how we will evaluate submissions to the Challenge, we've made the scripts available here.
 
 Helper scripts and Evaluation scripts are available in the [evaluation](evaluation) folder.
 
