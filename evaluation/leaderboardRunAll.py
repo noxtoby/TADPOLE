@@ -24,7 +24,7 @@ parser.add_argument('--runPart', dest='runPart', default='RR',
                    help='which part of the script to run. Usually either LR or RR, where '
                         'LR means "load first part, run second part" while RR means run both parts')
 
-parser.add_argument('--fast', dest='fast', type=int,
+parser.add_argument('--fast', dest='fast', type=int, default=1,
                    help='whether to run a fast version of the leaderboard.')
 
 args = parser.parse_args()
