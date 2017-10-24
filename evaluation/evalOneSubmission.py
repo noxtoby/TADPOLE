@@ -219,10 +219,10 @@ def evalOneSub(d4Df, forecastDf):
   ventsMAE = np.mean(np.abs(ventriclesEstim - trueVentsFilt))
 
   ##### Weighted Error Score (WES) ####
-  adasCoeffs = 1/(adasEstimUp - adasEstimLo)
+  adasCoeffs = 1.0/(adasEstimUp - adasEstimLo)
   adasWES = np.sum(adasCoeffs * np.abs(adasEstim - trueADASFilt))/np.sum(adasCoeffs)
 
-  ventsCoeffs = 1/(ventriclesEstimUp - ventriclesEstimLo)
+  ventsCoeffs = 1.0/(ventriclesEstimUp - ventriclesEstimLo)
   ventsWES = np.sum(ventsCoeffs * np.abs(ventriclesEstim - trueVentsFilt))/np.sum(ventsCoeffs)
 
   #### Coverage Probability Accuracy (CPA) ####
