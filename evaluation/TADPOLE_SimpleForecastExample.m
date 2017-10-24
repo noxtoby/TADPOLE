@@ -87,10 +87,14 @@ RID_Col = TADPOLE_Table.RID;
 RID_Col(isnan(RID_Col)) = -1; % missing data encoded as -1
 
 %* Compute months since Jan 2000 for each exam date
-EXAMDATE = cell2mat(TADPOLE_Table.EXAMDATE);
-ExamMonth_Col = zeros(length(TADPOLE_Table.EXAMDATE),1);
-for i=1:length(TADPOLE_Table.EXAMDATE)
-    ExamMonth_Col(i) = (str2num(TADPOLE_Table.EXAMDATE{i}(1:4))-2000)*12 + str2num(TADPOLE_Table.EXAMDATE{i}(6:7));
+if iscell(TADPOLE_Table.EXAMDATE)
+    EXAMDATE = cell2mat(TADPOLE_Table.EXAMDATE);
+else
+    EXAMDATE = cellstr(TADPOLE_Table.EXAMDATE,'yyyy-MM-dd');
+end
+ExamMonth_Col = zeros(length(EXAMDATE),1);
+for i=1:length(EXAMDATE)
+    ExamMonth_Col(i) = (str2num(EXAMDATE{i}(1:4))-2000)*12 + str2num(EXAMDATE{i}(6:7));
 end
 
 %* Copy the column specifying membership of D2 into an array.
