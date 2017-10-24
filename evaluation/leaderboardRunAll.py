@@ -24,6 +24,9 @@ parser.add_argument('--runPart', dest='runPart', default='RR',
                    help='which part of the script to run. Usually either LR or RR, where '
                         'LR means "load first part, run second part" while RR means run both parts')
 
+parser.add_argument('--fast', dest='fast', type=int,
+                   help='whether to run a fast version of the leaderboard.')
+
 args = parser.parse_args()
 
 TOKEN = open(os.path.expanduser('~/.dropboxTadpoleToken'), 'r').read()[:-1]
@@ -171,8 +174,6 @@ tr.d1 td {
 
   text += '</tbody>\n</table>'
 
-  print('####################\n')
-  print(text)
   with open(htmlFile, "w") as f:
     f.write(text)
 
@@ -191,21 +192,36 @@ def downloadLeaderboardSubmissions():
   os.system('mkdir -p %s' % ldbSubmissionsFld)
   nrEntries = len(fileListLdb)
 
+  teamNames = [f.split('.')[0][len('TADPOLE_Submission_Leaderboard_'):] for f in fileListLdb]
+
   evalResFile = '%s/evalResAll.npz' % ldbSubmissionsFld
 
-  entriesList = range(nrEntries)
   # entriesList = [0,1,2]
+  tableColumns = ('TEAMNAME', 'RANK' , 'MAUC', 'BCA',
+    'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCPA', 'ventsCPA')
 
   if args.runPart[0] == 'R':
-    evalResults = pd.DataFrame(np.nan, index=range(nrEntries), columns=('TEAMNAME', 'RANK' , 'MAUC', 'BCA',
-    'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCPA', 'ventsCPA'))
+    if args.fast:
+      # load submissions already evaluated and only evaluate the new ones
+      dataStruct = pickle.load(open(evalResFile, 'rb'))
+      evalResults = dataStruct['evalResults']
+      fileDatesRemote = dataStruct['fileDatesRemote']
+      entriesList = [e for e,f in enumerate(teamNames) if (evalResults['TEAMNAME'].str.contains(f).sum() == 0)]
+      nanSeries = pd.DataFrame(np.nan, index=range(2), columns=tableColumns)
+      evalResults = evalResults.append(nanSeries, ignore_index=True)
+    else:
+      evalResults = pd.DataFrame(np.nan, index=range(nrEntries), columns=tableColumns)
+      fileDatesRemote = []
+      entriesList = range(nrEntries)
+
     lb4Df = pd.read_csv('TADPOLE_LB4.csv')
     lb4Df = lb4Df[lb4Df['LB4'] == 1] # only keep the LB4 entries
     lb4Df.reset_index(drop=True, inplace=True)
-    fileDatesRemote = []
     indexInTable = 0
     for f in entriesList:
       fileName = fileListLdb[f]
+      teamName = teamNames[f]
+      # print('teamname ', teamName)
       remotePath = '%s/%s' % (uploadsFldRemote, fileName)
       localPath = '%s/%s' % (ldbSubmissionsFld, fileName)
       ldbDropbox.download(localPath, remotePath)
@@ -223,9 +239,9 @@ def downloadLeaderboardSubmissions():
         print('Error while processing submission %s' % fileName)
         pass
 
+
       if not np.isnan(evalResults['MAUC'].iloc[f]):
-        teamName = fileName.split('.')[0][len('TADPOLE_Submission_Leaderboard_'):]
-        print('teamname ', teamName)
+
         evalResults.loc[f, 'TEAMNAME'] = teamName
 
     nanMask = np.isnan(evalResults['MAUC'])
@@ -249,17 +265,15 @@ def downloadLeaderboardSubmissions():
   # compute the ranks using MAUC
   rankOrder = np.argsort(evalResults.as_matrix(columns=['MAUC']).reshape(-1))[::-1]  # sort them by MAUC
   rankOrder = np.argsort(rankOrder) + 1  # make them start from 1
-  print('ranks', evalResults['MAUC'], rankOrder, evalResults.as_matrix(columns=['MAUC']).reshape(-1), np.argsort(rankOrder))
   for f in range(evalResults.shape[0]):
     evalResults.loc[f, 'RANK'] = rankOrder[f]
 
-  print('evalResults before\n', evalResults)
+  # print('evalResults before\n', evalResults)
 
   evalResults = evalResults.sort_values(by=['MAUC', 'BCA'],ascending=False)
   evalResults = evalResults.reset_index(drop=True)
 
-  print('evalResults after\n', evalResults)
-
+  # print('evalResults after\n', evalResults)
 
   htmlFileFullPathRemote = '%s/%s' % (dropboxRemoteFolder, htmlFile)
   htmlFileFullPathLocal = '%s/%s' % (ldbSubmissionsFld, htmlFile)
