@@ -46,5 +46,10 @@ clear:
 copyToPublicRepo:
 	cp evalOneSubmission.py leaderboardRunAll.py TADPOLE_SimpleForecastExample.m makeDummyD4.py makeLeaderboardDataset.py TADPOLE_SimpleForecastExampleLeaderboard.m MAUC.py Makefile ../neil_repo/evaluation
 
-processLeaderboardSubmissions:
-	python3 leaderboardRunAll.py
+# fast processing uses previously compured results, which are saved in a file. Only adds new or missing submissions. If a submission is deleted from Dropbox, it will still show up in the leaderboard. Use the slow method to fully remove it.
+procLeaderboardFast:
+	python3 leaderboardRunAll.py --runPart RR
+
+# slow processing runs all the submissions. Run this only if submissions are deleted
+procLeaderboardSlow:
+	python3 leaderboardRunAll.py --runPart RR --fast 0

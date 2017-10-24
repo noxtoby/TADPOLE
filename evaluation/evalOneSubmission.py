@@ -44,12 +44,12 @@ def calcBCA(estimLabels, trueLabels, nrClasses):
       if (TP+FN) == 0:
         sensitivity = 0.5
       else:
-        sensitivity = TP/(TP+FN)
+        sensitivity = (1. * TP)/(TP+FN)
 
       if (TN+FP) == 0:
         specificity = 0.5
       else:
-        specificity = TN/(TN+FP)
+        specificity = (1. * TN)/(TN+FP)
 
       bcaCurr = 0.5*(sensitivity+specificity)
       bcaAll += [bcaCurr]
