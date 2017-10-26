@@ -207,17 +207,24 @@ def downloadLeaderboardSubmissions():
       evalResults = dataStruct['evalResults']
       fileDatesRemote = dataStruct['fileDatesRemote']
       entriesList = [e for e,f in enumerate(teamNames) if (evalResults['TEAMNAME'].str.contains(f).sum() == 0)]
-      nanSeries = pd.DataFrame(np.nan, index=range(2), columns=tableColumns)
+      nanSeries = pd.DataFrame(np.nan, index=range(len(entriesList)), columns=tableColumns)
+      nrEntriesSoFar = evalResults.shape[0]
       evalResults = evalResults.append(nanSeries, ignore_index=True)
+      print('teamNames', teamNames)
+      print('entriesList', entriesList)
+      print('evalResults', evalResults)
+      # print(adsa)
     else:
       evalResults = pd.DataFrame(np.nan, index=range(nrEntries), columns=tableColumns)
       fileDatesRemote = []
       entriesList = range(nrEntries)
+      nrEntriesSoFar = 0
 
     lb4Df = pd.read_csv('TADPOLE_LB4.csv')
     lb4Df = lb4Df[lb4Df['LB4'] == 1] # only keep the LB4 entries
     lb4Df.reset_index(drop=True, inplace=True)
     indexInTable = 0
+    entryToAddIndex = nrEntriesSoFar
     for f in entriesList:
       fileName = fileListLdb[f]
       teamName = teamNames[f]
@@ -232,17 +239,19 @@ def downloadLeaderboardSubmissions():
       print('Evaluating %s' % fileName)
       forecastDf = pd.read_csv(localPath)
       try:
-        evalResults.loc[f, ['MAUC', 'BCA',
-    'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCPA', 'ventsCPA']] = \
-        evalOneSubmission.evalOneSub(lb4Df, forecastDf)
+        evalResults.loc[entryToAddIndex, ['MAUC', 'BCA',
+      'adasMAE', 'ventsMAE', 'adasWES', 'ventsWES', 'adasCPA', 'ventsCPA']] = \
+          evalOneSubmission.evalOneSub(lb4Df, forecastDf)
+        evalResults.loc[entryToAddIndex, 'TEAMNAME'] = teamName
       except :
         print('Error while processing submission %s' % fileName)
         pass
 
 
-      if not np.isnan(evalResults['MAUC'].iloc[f]):
+      # if not np.isnan(evalResults['MAUC'].iloc[f]):
 
-        evalResults.loc[f, 'TEAMNAME'] = teamName
+      entryToAddIndex += 1
+
 
     nanMask = np.isnan(evalResults['MAUC'])
     evalResults = evalResults[np.logical_not(nanMask)]
