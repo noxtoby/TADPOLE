@@ -12,6 +12,7 @@ import string
 import time
 import datetime
 import pickle
+from scipy.stats import rankdata
 
 parser = argparse.ArgumentParser(usage='python3 leaderboardRunAll.py', description=r'''
   Script uploads the leaderboard table to dropbox
@@ -129,7 +130,7 @@ tr.d1 td {
 }
 </style>
 '''
-  text += 'Table last updated on %s' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M (UTC+0)') )
+  text += 'Table last updated on %s. Update frequency: every 5 minutes' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M (UTC+0)') )
   text += '<table  class="sortable smallfont" style="width: 880px; table-layout: fixed;"  >\n'
   text += r'''
   <col width="30">
@@ -156,7 +157,7 @@ tr.d1 td {
   nrFiles = len(forecastFiles)
   # print(evalResults.shape)
   # print(evalResults['MAUC'])
-  formatStrsMeasures = ['%.3f','%.3f','%.3f','%.2e','%.3f','%.2e','%.3f','%.3f']
+  formatStrsMeasures = ['%.3f','%.3f','%.3f','%.5f','%.3f','%.5f','%.3f','%.3f']
   for f in range(evalResults['MAUC'].shape[0]):
     if not np.isnan(evalResults['MAUC'].iloc[f]):
       text += '\n   <tr class="d%d">' % (f % 2)
@@ -165,7 +166,7 @@ tr.d1 td {
       # print(f, type('%f' % evalResults['RANK'].iloc[f]))
       # print(f, [type(n) for n in evalResults.loc[f,'MAUC':'ventsCP']])
 
-      text += '<td>%d</td>'  % evalResults['RANK'].iloc[f]
+      text += '<td>%.1f</td>'  % evalResults['RANK'].iloc[f]
       text += '<td style="word-wrap: break-word">%s</td><td>' % evalResults['TEAMNAME'].iloc[f]
       text += '</td><td>'.join(
         [ strFmt % n for strFmt, n in zip(formatStrsMeasures, evalResults.loc[f,'MAUC':'ventsCPA'])] +
@@ -271,9 +272,17 @@ def downloadLeaderboardSubmissions():
     fileDatesRemote = dataStruct['fileDatesRemote']
     evalResults = dataStruct['evalResults']
 
-  # compute the ranks using MAUC
-  rankOrder = np.argsort(evalResults.as_matrix(columns=['MAUC']).reshape(-1))[::-1]  # sort them by MAUC
-  rankOrder = np.argsort(rankOrder) + 1  # make them start from 1
+  rankMAUC = rankdata(rankdata(-evalResults.as_matrix(columns=['MAUC']).reshape(-1), method='average'), method='average')
+  rankADAS = rankdata(rankdata(evalResults.as_matrix(columns = ['adasMAE']).reshape(-1), method='average'), method='average')
+  rankVENTS = rankdata(rankdata(evalResults.as_matrix(columns = ['ventsMAE']).reshape(-1), method='average'), method='average')
+
+  print('rankMAUC', rankMAUC)
+  print('rankADAS', rankADAS)
+  print('rankVENTS', rankVENTS)
+
+  rankSum = rankMAUC + rankADAS + rankVENTS
+
+  rankOrder = rankdata(rankSum, method='average')   # make them start from 1
   for f in range(evalResults.shape[0]):
     evalResults.loc[f, 'RANK'] = rankOrder[f]
 
