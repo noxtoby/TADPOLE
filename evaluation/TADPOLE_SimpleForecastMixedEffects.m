@@ -246,18 +246,18 @@ beta = pinv(X'*X)*X'*Y;
 Yhat = X*beta;
 unqRIDsBeta = [-1; -1; unqSubj];
 
-XpredAge = ones(N_LB2 * nForecasts, 2);
-for i=1:N_LB2
- subj_rows = find(RID_Col==LB2_SubjList(i) & LB2_col);
- subj_exam_dates = ExamMonth_Col(subj_rows);
- m = min(subj_exam_dates);
- yearsDiff = (monthsToForecastInd - m)/12;
- 
- XpredAgeCurr = TADPOLE_Table.AGE(subj_rows(1)) + yearsDiff;
- XpredAgeCurr = [ones(size(XpredAgeCurr)), XpredAgeCurr];
- 
- Ypred = XpredAgeCurr * [beta(1:2); beta(unqRIDsBeta == LB2_SubjList(i))];
-end
+%XpredAge = ones(N_LB2 * nForecasts, 2);
+% for i=1:N_LB2
+%  subj_rows = find(RID_Col==LB2_SubjList(i) & LB2_col);
+%  subj_exam_dates = ExamMonth_Col(subj_rows);
+%  m = min(subj_exam_dates);
+%  yearsDiff = (monthsToForecastInd - m)/12;
+%  
+%  XpredAgeCurr = (TADPOLE_Table.AGE(subj_rows(1)) + yearsDiff)';
+%  XpredAgeCurr = [ones(size(XpredAgeCurr)), XpredAgeCurr, ones(size(XpredAgeCurr))];
+%  
+%  Ypred = XpredAgeCurr * [beta(1:2); beta(unqRIDsBeta == LB2_SubjList(i))];
+% end
 
 for i=1:N_LB2
     
@@ -297,6 +297,9 @@ for i=1:N_LB2
     else
         display(['Number of ADAS13: ' length(exams_with_ADAS13) '. Subject: ' LB2_SubjList(i)]);
     end
+
+
+    
     
     ADAS13_forecast(i,:,1) = max([zeros(length(ADAS13_Preds),1), ADAS13_Preds]')';
     ADAS13_forecast(i,:,2) = max([zeros(length(ADAS13_Preds),1), ADAS13_Preds-1]')'; % Set to zero if best-guess less than 1.
@@ -339,8 +342,13 @@ for i=1:N_LB2
         [i squeeze(CLIN_STAT_forecast(i,1,1:3))' squeeze(Ventricles_ICV_forecast(i,1,1:3))' squeeze(ADAS13_forecast(i,1,1:3))']
     end
     
-    % compute mixed effects predictions
-
+    % compute mixed effects model predictions
+    m = min(subj_exam_dates);
+    yearsDiff = (monthsToForecastInd - m)/12;
+    XpredAgeCurr = (TADPOLE_Table.AGE(subj_rows(1)) + yearsDiff)';
+    XpredAgeCurr = [ones(size(XpredAgeCurr)), XpredAgeCurr, ones(size(XpredAgeCurr))];
+    ADASpredCurrMixed = XpredAgeCurr * [beta(1:2); beta(unqRIDsBeta == LB2_SubjList(i))];
+    
     
     % plot ADAS13
     figure(1)
@@ -349,7 +357,9 @@ for i=1:N_LB2
     hold on
     plot(monthsToForecastInd,ADAS13_forecast(i,:,1));
     hold on
-    scatter(scanDateLB4_Col(subj_rows_lb4),LB4_Table.ADAS13(subj_rows_lb4),30,'blue')  
+    scatter(scanDateLB4_Col(subj_rows_lb4),LB4_Table.ADAS13(subj_rows_lb4),30,'blue') 
+    hold on
+    plot(monthsToForecastInd,ADASpredCurrMixed,30,'orange')
     
     % plot Ventricles
     figure(2)
