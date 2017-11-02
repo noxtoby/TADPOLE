@@ -1,5 +1,5 @@
 function [ADAS13_Col, Ventricles_Col, ICV_Col, Ventricles_ICV_Col, ...
-  CLIN_STAT_Col, RID_Col, ExamMonth_Col, scanDateLB4, LB1_col, LB2_col] = extractSalientColumns(TADPOLE_Table, LB_Table, LB4_Table)
+  CLIN_STAT_Col, RID_Col, ExamMonth_Col, D2_col] = extractSalientColumns(TADPOLE_Table)
 
 %* Copy numeric target variables into arrays. Missing data is encoded as -1
 % ADAS13 scores 
@@ -35,25 +35,11 @@ for i=1:length(TADPOLE_Table.EXAMDATE)
     ExamMonth_Col(i) = (str2num(TADPOLE_Table.EXAMDATE{i}(1:4))-2000)*12 + str2num(TADPOLE_Table.EXAMDATE{i}(6:7));
 end
 
-scanDateLB4 = cell2mat(LB4_Table.ScanDate);
-scanDateLB4_Col = zeros(length(LB4_Table.ScanDate),1);
-for i=1:length(LB4_Table.ScanDate)
-    scanDateLB4_Col(i) = (str2num(LB4_Table.ScanDate{i}(1:4))-2000)*12 + str2num(LB4_Table.ScanDate{i}(6:7));
-end
-
-
-% Copy the column specifying membership of LB1 into an array.
-if iscell(LB_Table.LB1)
-  LB1_col = str2num(cell2mat(LB_Table.LB1));
+%* Copy the column specifying membership of D2 into an array.
+if iscell(TADPOLE_Table.D2)
+  D2_col = str2num(cell2mat(TADPOLE_Table.D2));
 else
-  LB1_col = LB_Table.LB1;
-end
-
-% Copy the column specifying membership of LB2 into an array.
-if iscell(LB_Table.LB2)
-  LB2_col = str2num(cell2mat(LB_Table.LB2));
-else
-  LB2_col = LB_Table.LB2;
+  D2_col = TADPOLE_Table.D2;
 end
 
 end

@@ -1,8 +1,8 @@
-% TADPOLE_Leaderboard_BenchmarkMixedEffectsCov.m
+% TADPOLE_BenchmarkMixedEffectsCov.m
 %
-% Leaderboard submission using linear mixed effects model on ADAS13 and VentVol (+ APOE as covariate).
+% Submission using linear mixed effects model on ADAS13 and VentVol (+ APOE as covariate).
 %
-% Adapted by Razvan Marinescu from Daniel Alexander's SimpleForecastFPC02_Leaderboard.m script
+% Adapted by Razvan Marinescu from Daniel Alexander's SimpleForecastFPC02.m script
 %============
 % Date:
 %   10 September 2017
@@ -11,19 +11,15 @@
 % Script requires that TADPOLE_D1_D2.csv is in the parent directory. Change if
 % necessary
 dataLocationD1D2 = '../'; % parent directory
-dataLocationLB1LB2 = './';% current directory
 
 tadpoleD1D2File = fullfile(dataLocationD1D2,'TADPOLE_D1_D2.csv');
-tadpoleLB1LB2File = fullfile(dataLocationLB1LB2,'TADPOLE_LB1_LB2.csv');
-tadpoleLB4File = fullfile(dataLocationLB1LB2,'TADPOLE_LB4.csv');
-outputFile = 'TADPOLE_Submission_Leaderboard_BenchmarkMixedEffectsCov.csv';
+outputFile = 'TADPOLE_Submission_BenchmarkMixedEffectsCov.csv';
 
-[TADPOLE_Table, LB_Table, LB4_Table] = readTadpoleTables(tadpoleD1D2File, tadpoleLB1LB2File, tadpoleLB4File);
+TADPOLE_Table = readTadpoleD1D2(tadpoleD1D2File);
 
-[ADAS13_Col, Ventricles_Col, ICV_Col, Ventricles_ICV_Col, CLIN_STAT_Col, ...
-  RID_Col, ExamMonth_Col, ~]  = extractSalientColumns(TADPOLE_Table);
-
-[scanDateLB4, LB1_col, LB2_col] = extractSalientColumnsLeaderboard(LB_Table, LB4_Table);
+[ADAS13_Col, Ventricles_Col, ICV_Col, Ventricles_ICV_Col, ...
+  CLIN_STAT_Col, RID_Col, ExamMonth_Col, D2_Col] ...
+  = extractSalientColumns(TADPOLE_Table);
 
 % choose whether to plot the data.
 plotDataFlag = 0;
@@ -32,68 +28,70 @@ plotDataFlag = 0;
 
 display('Fitting Gaussian models...');
 
-% Use training LB1 set to estimate mean and variance of ADAS given CN, 
-% MCI, AD.
-lb1_inds = find(LB1_col);
+% estimate mean and variance of ADAS given CN, MCI, AD.
 
 % Find all LB1 entries that are NL and have ADAS13.
-lb1_and_NL_and_ADAS13 = find(strcmp(CLIN_STAT_Col, 'NL') & LB1_col & ADAS13_Col>-1);
+NL_and_ADAS13 = find(strcmp(CLIN_STAT_Col, 'NL') & ADAS13_Col>-1);
 % Get the states of the list of ADAS13 scores for these.
-NL_ADAS13_mean = mean(ADAS13_Col(lb1_and_NL_and_ADAS13));
-NL_ADAS13_std = std(ADAS13_Col(lb1_and_NL_and_ADAS13));
+NL_ADAS13_mean = mean(ADAS13_Col(NL_and_ADAS13));
+NL_ADAS13_std = std(ADAS13_Col(NL_and_ADAS13));
 
 % Similarly get stats for ADAS13 of MCIs.
-lb1_and_MCI_and_ADAS13 = find(strcmp(CLIN_STAT_Col, 'MCI') & LB1_col & ADAS13_Col>-1);
-MCI_ADAS13_mean = mean(ADAS13_Col(lb1_and_MCI_and_ADAS13));
-MCI_ADAS13_std = std(ADAS13_Col(lb1_and_MCI_and_ADAS13));
+MCI_and_ADAS13 = find(strcmp(CLIN_STAT_Col, 'MCI') & ADAS13_Col>-1);
+MCI_ADAS13_mean = mean(ADAS13_Col(MCI_and_ADAS13));
+MCI_ADAS13_std = std(ADAS13_Col(MCI_and_ADAS13));
 
 % And for AD
-lb1_and_AD_and_ADAS13 = find(strcmp(CLIN_STAT_Col, 'Dementia') & LB1_col & ADAS13_Col>-1);
-AD_ADAS13_mean = mean(ADAS13_Col(lb1_and_AD_and_ADAS13));
-AD_ADAS13_std = std(ADAS13_Col(lb1_and_AD_and_ADAS13));
-
+AD_and_ADAS13 = find(strcmp(CLIN_STAT_Col, 'Dementia') & ADAS13_Col>-1);
+AD_ADAS13_mean = mean(ADAS13_Col(AD_and_ADAS13));
+AD_ADAS13_std = std(ADAS13_Col(AD_and_ADAS13));
 
 display('Generating forecast ...')
 
 %* Get the list of subjects to forecast from LB1_2 - the ordering is the
 %* same as in the submission template.
-lbInds = find(LB2_col);
-LB2_SubjList = unique(RID_Col(lbInds));
-N_LB2 = length(LB2_SubjList);
+d2Inds = find(D2_Col);
+D2_SubjList = unique(RID_Col(d2Inds));
+N_D2 = length(D2_SubjList);
 
 % As opposed to the proper submission, we require 84 months of forecast
 % data. This is because some ADNI2 subjects from LB4 have visits even 6-7 years
 % after their last ADNI1 visit from LB2.
 %* Create arrays to contain the 84 monthly forecasts for each D2 subject
-nForecasts = 7*12; % forecast 7 years (84 months).
+nForecasts = 5*12; % forecast 5 years (60 months).
 % 1. Clinical status forecasts
 %    i.e. relative likelihood of NL, MCI, and Dementia (3 numbers)
-CLIN_STAT_forecast = zeros(N_LB2, nForecasts, 3);
+CLIN_STAT_forecast = zeros(N_D2, nForecasts, 3);
 % 2. ADAS13 forecasts 
 %    (best guess, upper and lower bounds on 50% confidence interval)
-ADAS13_forecast = zeros(N_LB2, nForecasts, 3);
+ADAS13_forecast = zeros(N_D2, nForecasts, 3);
 % 3. Ventricles volume forecasts 
 %    (best guess, upper and lower bounds on 50% confidence interval)
-Ventricles_ICV_forecast = zeros(N_LB2, nForecasts, 3);
+Ventricles_ICV_forecast = zeros(N_D2, nForecasts, 3);
 
-most_recent_CLIN_STAT = cell(N_LB2, 1);
-most_recent_ADAS13 = zeros(N_LB2, 1);
-most_recent_Ventricles_ICV = zeros(N_LB2, 1);
+%* For this simple forecast, we will simply use the most recent exam of
+%* each type from each D2 subject and base the forecast on that.
+most_recent_CLIN_STAT = cell(N_D2, 1);
+most_recent_ADAS13 = zeros(N_D2, 1);
+most_recent_Ventricles_ICV = zeros(N_D2, 1);
 
 display_info = 1; % Useful for checking and debugging (see below)
 
-%*** Some defaults for confidence intervals
+%*** Some defaults where data is missing
+%* Ventricles
+  % Missing data = typical volume +/- broad interval = 25000 +/- 20000
+Ventricles_typical = 25000;
   % Default CI = 1000
 Ventricles_default_50pcMargin = 1000; % +/- (broad 50% confidence interval)
   % Convert to Ventricles/ICV via linear regression
 lm = fitlm(Ventricles_Col(Ventricles_Col>0),Ventricles_ICV_Col(Ventricles_Col>0));
+Ventricles_ICV_typical = predict(lm,Ventricles_typical);
 Ventricles_ICV_default_50pcMargin = abs(predict(lm,Ventricles_default_50pcMargin) - predict(lm,-Ventricles_default_50pcMargin))/2;
 
-
-% Need forecasts starting from May 2010 and up to and inlcuding April 2017. Those are
-% months 125 to 208 (from Jan 2000).
-monthsToForecastInd = 125:208;
-predictionStartDate = datenum('01-May-2010');
+% Need forecasts starting from Jan 2018 and up to (and including) Dec 2022. Those are
+% months 217 to 276 (from Jan 2000).
+monthsToForecastInd = 217:276;
+predictionStartDate = datenum('01-Jan-2018');
 
 nrVisits = size(RID_Col,1);
 unqSubj = unique(RID_Col);
@@ -108,6 +106,7 @@ nrUnqSubj = length(unqSubj);
 % fixed parameters: intercept, population_slope_APOE=0, population_slope_APOE>0
 % random parameters: shift_subj_1, shift_subj_2, ...
 % there is actually one extra degree of freedom (first parameter is unnecessary, but predictions should still be the same)
+
 
 nrFixedParams = 3;
 nrRandomParams = nrUnqSubj;
@@ -127,7 +126,6 @@ for s=1:nrUnqSubj
   subj_exam_dates = ExamMonth_Col(subj_rows);
   m = min(subj_exam_dates);
   yearsDiff = (subj_exam_dates - m)/12;
-  unqSubj(s)
   
   %X(subj_rows,2)
   assert(min(TADPOLE_Table.AGE(subj_rows)) == max(TADPOLE_Table.AGE(subj_rows)))
@@ -158,10 +156,9 @@ YventsFilt = Yvents(filterMaskVents);
 Xvents = Xfull(filterMaskVents,:);
 betaVents = pinv(Xvents'*Xvents)*Xvents'*YventsFilt;
 
-for i=1:N_LB2
+for i=1:N_D2
     
-    % Find the most recent exam for this subject
-    subj_rows = find(RID_Col==LB2_SubjList(i) & LB2_col);
+    subj_rows = find(RID_Col==D2_SubjList(i) & D2_Col);
     subj_exam_dates = ExamMonth_Col(subj_rows);
 
     exams_with_CLIN_STAT = [];
@@ -175,13 +172,9 @@ for i=1:N_LB2
     XpredAgeAPOE0Curr = XpredAgeCurr * (TADPOLE_Table.APOE4(subj_rows(1)) == 0);
     XpredAgeAPOE12Curr =  XpredAgeCurr * (TADPOLE_Table.APOE4(subj_rows(1)) > 0);
     
-    % construct design matrix for prediction (current subject only). This
-    % is different than the training design matrix, since it contains the age of 
-    % current subject at future timepoints, when we
-    % need to make the predictions.
     XpredFull = [ones(size(XpredAgeCurr)), XpredAgeAPOE0Curr, XpredAgeAPOE12Curr, ones(size(XpredAgeCurr))];
-    ADASpredCurrMixed = XpredFull * [betaADAS(1:nrFixedParams); betaADAS(unqRIDsBeta == LB2_SubjList(i))];
-    VentsPredCurrMixed = XpredFull * [betaVents(1:nrFixedParams); betaVents(unqRIDsBeta == LB2_SubjList(i))];
+    ADASpredCurrMixed = XpredFull * [betaADAS(1:nrFixedParams); betaADAS(unqRIDsBeta == D2_SubjList(i))];
+    VentsPredCurrMixed = XpredFull * [betaVents(1:nrFixedParams); betaVents(unqRIDsBeta == D2_SubjList(i))];
     
     ADAS13_forecast(i,:,1) = ADASpredCurrMixed;
     ADAS13_forecast(i,:,2) = ADASpredCurrMixed - 1;
@@ -201,12 +194,9 @@ for i=1:N_LB2
     CLIN_STAT_forecast(i,:,2) = MCI_LikFromADAS13./(NL_LikFromADAS13+MCI_LikFromADAS13+AD_LikFromADAS13);
     CLIN_STAT_forecast(i,:,3) = AD_LikFromADAS13./(NL_LikFromADAS13+MCI_LikFromADAS13+AD_LikFromADAS13); 
     
-    if plotDataFlag == 1
-      % find subjects in lb4 just for plotting
-      subj_rows_lb4 = find(LB4_Table.RID == LB2_SubjList(i) );
-
+    if plotDataFlag
       % plot ADAS13
-      figure(1)
+      figure(1);
       clf
       scatter(subj_exam_dates(exams_with_ADAS13)', ADAS13_Col(subj_rows(exams_with_ADAS13)),30,'magenta');
       hold on
@@ -215,7 +205,7 @@ for i=1:N_LB2
       scatter(scanDateLB4_Col(subj_rows_lb4),LB4_Table.ADAS13(subj_rows_lb4),30,'blue') 
 
       % plot Ventricles
-      figure(2)
+      figure(2);
       clf
       scatter(subj_exam_dates(exams_with_ventsv)', Ventricles_ICV_Col(subj_rows(exams_with_ventsv)),30,'magenta');
       hold on
@@ -225,6 +215,6 @@ for i=1:N_LB2
     end
 end
 
-writePredictionsToFile(outputFile, nForecasts, N_LB2, LB2_SubjList, ...
+writePredictionsToFile(outputFile, nForecasts, N_D2, D2_SubjList, ...
   CLIN_STAT_forecast, ADAS13_forecast, Ventricles_ICV_forecast, predictionStartDate);
 
