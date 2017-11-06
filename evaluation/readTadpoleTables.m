@@ -1,4 +1,5 @@
 function [TADPOLE_Table, LB_Table, LB4_Table] = readTadpoleTables(tadpoleD1D2File, tadpoleLB1LB2File, tadpoleLB4File)
+%% Read TADPOLE_D1_D2 table and also the leaderboard tables
 
 TADPOLE_Table_full = readTadpoleD1D2(tadpoleD1D2File);
 

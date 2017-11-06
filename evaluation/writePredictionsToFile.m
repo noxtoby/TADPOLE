@@ -1,7 +1,6 @@
 function writePredictionsToFile(outputFile, nForecasts, N_LB2, LB2_SubjList, ...
   CLIN_STAT_forecast, ADAS13_forecast, Ventricles_ICV_forecast, startDate)
-
-%% Now construct the forecast spreadsheet and output it.
+%% Write the forecasts to the output spreadsheet
 display(sprintf('Constructing the output spreadsheet %s ...', outputFile))
 
 submission_table =  cell2table(cell(N_LB2*nForecasts,12), ...
