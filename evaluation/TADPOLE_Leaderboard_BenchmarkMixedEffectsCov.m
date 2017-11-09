@@ -76,19 +76,11 @@ ADAS13_forecast = zeros(N_LB2, nForecasts, 3);
 %    (best guess, upper and lower bounds on 50% confidence interval)
 Ventricles_ICV_forecast = zeros(N_LB2, nForecasts, 3);
 
-most_recent_CLIN_STAT = cell(N_LB2, 1);
-most_recent_ADAS13 = zeros(N_LB2, 1);
-most_recent_Ventricles_ICV = zeros(N_LB2, 1);
-
 display_info = 1; % Useful for checking and debugging (see below)
 
 %*** Some defaults for confidence intervals
-  % Default CI = 1000
-Ventricles_default_50pcMargin = 1000; % +/- (broad 50% confidence interval)
-  % Convert to Ventricles/ICV via linear regression
-lm = fitlm(Ventricles_Col(Ventricles_Col>0),Ventricles_ICV_Col(Ventricles_Col>0));
-Ventricles_ICV_default_50pcMargin = abs(predict(lm,Ventricles_default_50pcMargin) - predict(lm,-Ventricles_default_50pcMargin))/2;
-
+Ventricles_ICV_default_50pcMargin = 0.05;
+ADAS_default_50pcMargin = 1;
 
 % Need forecasts starting from May 2010 and up to and inlcuding April 2017. Those are
 % months 125 to 208 (from Jan 2000).
@@ -184,8 +176,8 @@ for i=1:N_LB2
     VentsPredCurrMixed = XpredFull * [betaVents(1:nrFixedParams); betaVents(unqRIDsBeta == LB2_SubjList(i))];
     
     ADAS13_forecast(i,:,1) = ADASpredCurrMixed;
-    ADAS13_forecast(i,:,2) = ADASpredCurrMixed - 1;
-    ADAS13_forecast(i,:,3) = ADASpredCurrMixed + 1;
+    ADAS13_forecast(i,:,2) = ADASpredCurrMixed - ADAS_default_50pcMargin;
+    ADAS13_forecast(i,:,3) = ADASpredCurrMixed + ADAS_default_50pcMargin;
     
     Ventricles_ICV_forecast(i,:,1) = VentsPredCurrMixed;
     Ventricles_ICV_forecast(i,:,2) = VentsPredCurrMixed - Ventricles_ICV_default_50pcMargin;
