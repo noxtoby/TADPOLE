@@ -69,24 +69,12 @@ ADAS13_forecast = zeros(N_D2, nForecasts, 3);
 %    (best guess, upper and lower bounds on 50% confidence interval)
 Ventricles_ICV_forecast = zeros(N_D2, nForecasts, 3);
 
-%* For this simple forecast, we will simply use the most recent exam of
-%* each type from each D2 subject and base the forecast on that.
-most_recent_CLIN_STAT = cell(N_D2, 1);
-most_recent_ADAS13 = zeros(N_D2, 1);
-most_recent_Ventricles_ICV = zeros(N_D2, 1);
-
 display_info = 1; % Useful for checking and debugging (see below)
 
 %*** Some defaults where data is missing
-%* Ventricles
-  % Missing data = typical volume +/- broad interval = 25000 +/- 20000
-Ventricles_typical = 25000;
-  % Default CI = 1000
-Ventricles_default_50pcMargin = 1000; % +/- (broad 50% confidence interval)
-  % Convert to Ventricles/ICV via linear regression
-lm = fitlm(Ventricles_Col(Ventricles_Col>0),Ventricles_ICV_Col(Ventricles_Col>0));
-Ventricles_ICV_typical = predict(lm,Ventricles_typical);
-Ventricles_ICV_default_50pcMargin = abs(predict(lm,Ventricles_default_50pcMargin) - predict(lm,-Ventricles_default_50pcMargin))/2;
+% Missing data = typical volume +/- broad interval = 25000 +/- 20000
+Ventricles_ICV_default_50pcMargin = 0.05;
+ADAS_default_50pcMargin = 1;
 
 % Need forecasts starting from Jan 2018 and up to (and including) Dec 2022. Those are
 % months 217 to 276 (from Jan 2000).
@@ -121,7 +109,7 @@ Xfull(:,3) = 0;
 % Estimate the age at scan for every subject visit, since the AGE column
 % only contains the age at baseline visit
 for s=1:nrUnqSubj
-  % Find the most recent exam for this subject
+  % Find the exams for this subject
   subj_rows = RID_Col == unqSubj(s);
   subj_exam_dates = ExamMonth_Col(subj_rows);
   m = min(subj_exam_dates);
@@ -177,8 +165,8 @@ for i=1:N_D2
     VentsPredCurrMixed = XpredFull * [betaVents(1:nrFixedParams); betaVents(unqRIDsBeta == D2_SubjList(i))];
     
     ADAS13_forecast(i,:,1) = ADASpredCurrMixed;
-    ADAS13_forecast(i,:,2) = ADASpredCurrMixed - 1;
-    ADAS13_forecast(i,:,3) = ADASpredCurrMixed + 1;
+    ADAS13_forecast(i,:,2) = ADASpredCurrMixed - ADAS_default_50pcMargin;
+    ADAS13_forecast(i,:,3) = ADASpredCurrMixed + ADAS_default_50pcMargin;
     
     Ventricles_ICV_forecast(i,:,1) = VentsPredCurrMixed;
     Ventricles_ICV_forecast(i,:,2) = VentsPredCurrMixed - Ventricles_ICV_default_50pcMargin;

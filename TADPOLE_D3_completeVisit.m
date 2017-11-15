@@ -1,17 +1,21 @@
-% TADPOLE_D3_completeVisit.m (Updated!) Identifying potential test subjects for TADPOLE challenge 2017
+% TADPOLE_D3_completeVisit.m Identifying potential test subjects for TADPOLE challenge 2017
 %
-% The original D3 simply took the most recent visit for individuals in D2
+% The original D3 simply takes the most recent visit for individuals in D2
 % (prospective rollovers into ADNI3).
 % There was a lot of missing data, for various reasons.
 %
-% This updated version of D3 finds the most recent visit *without missing
+% This alternative version of D3 finds the most recent visit *without missing
 % data*.
 %  Explicitly, this script searches back in time through the D2 data set,
 %  identifying visits where the individual has data for each TADPOLE
 %  Challenge target variable: DX, ADAS13, and Ventricles.
 %
-% You don't need to run this script if you've downloaded the latest 
-% TADPOLE data sets from the ADNI/LONI website.
+% Output:
+%  TADPOLE_D3_completeVisit.csv
+%
+% This is an alternative D3 which comes under ID9–ID12 on the submissions table
+% here:
+%  https://tadpole.grand-challenge.org/details/#Submissions
 %
 % ============
 % Date:
@@ -23,7 +27,7 @@
 % For more information on TADPOLE Challenge:
 %   http://tadpole.grand-shallenge.org 
 
-% To regenerate the updated D3, place this script in the same location as
+% To regenerate the alternative D3, place this script in the same location as
 % the TADPOLE_D1_D2.csv spreadsheet downloaded from the LONI website.
 
 %%
@@ -115,7 +119,7 @@ table_D3 = table_D2(D3_rows,D3_cols);
 
 table_D3.years_endOfADNI2 = table_D2_targetVariablesOnly.t(D3_rows);
 
-%% Write tables to CSV spreadsheets
+%% Write table to CSV spreadsheet
 if writeTables
   writetable(table_D3 ,fullfile(dataSaveLocation,'TADPOLE_D3_completeVisit.csv'))
 end
