@@ -255,10 +255,10 @@ if __name__ == "__main__":
   forecastFile = args.forecastFile
 
   if args.leaderboard:
-    if (not forecastFile.startswith('TADPOLE_Submission_Leaderboard_')) or (not forecastFile.endswith('.csv')):
+    if ('TADPOLE_Submission_Leaderboard_' not in forecastFile) or (not forecastFile.endswith('.csv')):
       raise ValueError('Leaderboard submission filename is not in the correct format: TADPOLE_Submission_Leaderboard_TeamName.csv')
   else:
-    if (not forecastFile.startswith('TADPOLE_Submission_')) or (not forecastFile.endswith('.csv')):
+    if ('TADPOLE_Submission_' not in forecastFile) or (not forecastFile.endswith('.csv')):
       raise ValueError('Submission filename is not in the correct format: TADPOLE_Submission_TeamName.csv.')
 
   d4Df = pd.read_csv(d4File)
