@@ -32,28 +32,31 @@ def calcBCA(estimLabels, trueLabels, nrClasses):
 
   bcaAll = []
   for c0 in range(nrClasses):
-    for c1 in range(c0+1,nrClasses):
-      # c0 = positive class  &  c1 = negative class
-      TP = np.sum((estimLabels == c0) & (trueLabels == c0))
-      TN = np.sum((estimLabels == c1) & (trueLabels == c1))
-      FP = np.sum((estimLabels == c1) & (trueLabels == c0))
-      FN = np.sum((estimLabels == c0) & (trueLabels == c1))
+    # c0 can be either CTL, MCI or AD
 
-      # sometimes the sensitivity of specificity can be NaN, if the user doesn't forecast one of the classes.
-      # In this case we assume a default value for sensitivity/specificity
-      if (TP+FN) == 0:
-        sensitivity = 0.5
-      else:
-        sensitivity = (1. * TP)/(TP+FN)
+    # one example when c0=CTL
+    # TP - label was estimated as CTL, and the true label was also CTL
+    # FP - label was estimated as CTL, but the true label was not CTL (was either MCI or AD).
+    TP = np.sum((estimLabels == c0) & (trueLabels == c0))
+    TN = np.sum((estimLabels != c0) & (trueLabels != c0))
+    FP = np.sum((estimLabels == c0) & (trueLabels != c0))
+    FN = np.sum((estimLabels != c0) & (trueLabels == c0))
 
-      if (TN+FP) == 0:
-        specificity = 0.5
-      else:
-        specificity = (1. * TN)/(TN+FP)
+    # sometimes the sensitivity of specificity can be NaN, if the user doesn't forecast one of the classes.
+    # In this case we assume a default value for sensitivity/specificity
+    if (TP+FN) == 0:
+      sensitivity = 0.5
+    else:
+      sensitivity = (1. * TP)/(TP+FN)
 
-      bcaCurr = 0.5*(sensitivity+specificity)
-      bcaAll += [bcaCurr]
-      # print('bcaCurr %f TP %f TN %f FP %f FN %f' % (bcaCurr, TP, TN, FP, FN))
+    if (TN+FP) == 0:
+      specificity = 0.5
+    else:
+      specificity = (1. * TN)/(TN+FP)
+
+    bcaCurr = 0.5*(sensitivity+specificity)
+    bcaAll += [bcaCurr]
+    # print('bcaCurr %f TP %f TN %f FP %f FN %f' % (bcaCurr, TP, TN, FP, FN))
 
   return np.mean(bcaAll)
 
