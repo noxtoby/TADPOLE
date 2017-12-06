@@ -251,7 +251,6 @@ if __name__ == "__main__":
 
   parser.add_argument('--leaderboard', action='store_true', help='pass this flag if the submission is a leaderboard submission. It ensures the filename is in the right format')
 
-
   args = parser.parse_args()
 
   d4File = args.d4File

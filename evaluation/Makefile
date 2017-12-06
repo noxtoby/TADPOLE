@@ -27,6 +27,7 @@ leaderboard:
 	# Then generate a simple forecast from LB2, and save it as TADPOLE_Submission_Leaderboard_TeamName1.csv ...
 	# In TADPOLE_SimpleForecastExampleLeaderboard.m, you should replace TeamName1 with your team name and submission index, e.g., TADPOLE_Submission_Leaderboard_TeamAwesome3.csv
 	# NOTE: Change the Matlab path above as required. Otherwise load the TADPOLE_SimpleForecastExampleLeaderboard.m script manually in MATLAB and run it.
+	# If the MATLAB script doesn't run, try the equivalent Python script: TADPOLE_SimpleForecastExampleLeaderboard.py
 	$(MATLAB_PATH) -nodesktop -nosplash -r "cd $(CURDIR); TADPOLE_SimpleForecastExampleLeaderboard; exit";
 
 	# Evaluate the user forecasts from TADPOLE_Submission_Leaderboard_TeamName1.csv against TADPOLE_LB4.csv using the evaluation function
