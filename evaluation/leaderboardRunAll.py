@@ -130,7 +130,7 @@ tr.d1 td {
 }
 </style>
 '''
-  text += 'Table last updated on %s. Update frequency: every 5 minutes' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M (UTC+0)') )
+  text += 'Table last updated on %s. Update frequency: every 20 minutes' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M (UTC+0)') )
   text += '<table  class="sortable smallfont" style="width: 880px; table-layout: fixed;"  >\n'
   text += r'''
   <col width="30">
