@@ -1,13 +1,21 @@
+'''
+This Python script computes summary statistics for datasets D1-D4 for the TADPOLE white paper (Table 2).
+
+Author: Razvan V. Marinescu
+
+'''
+
+
 import pandas as pd
 import os
 import sys
 import numpy as np
 
-d12PD = pd.read_csv('TADPOLE_D1_D2.csv')
+d12PD = pd.read_csv('../TADPOLE_D1_D2.csv')
 
 d1PD = d12PD[d12PD.D1 == 1]
 d2PD = d12PD[d12PD.D2 == 1]
-d3PD = pd.read_csv('TADPOLE_D3.csv')
+d3PD = pd.read_csv('../TADPOLE_D3.csv')
 
 pdAll = [d1PD, d2PD, d3PD]
 
@@ -162,7 +170,7 @@ dropoutRate = nrSubjADNI1andADNIGO2 / nrSubjADNI1
 
 nrSubjD2 = np.sum(d12ByRID.D2.apply(
   lambda x: np.in1d(1, x)).astype('bool'))
-nrSubjD4 = nrSubjD2 * dropoutRate
+nrSubjD4 = int(nrSubjD2 * dropoutRate)
 
 d12oneYear = d12PD[('2012-06-01' < d12PD.EXAMDATE) & ( d12PD.EXAMDATE < '2013-06-01')] # filter entries in first year of ADNI2
 d12oneYearByRID = d12oneYear.groupby(['RID'], as_index=False)
@@ -188,9 +196,9 @@ nrMCID3norm = nrMCID3/nrD3sum
 nrADD3norm = nrADD3/nrD3sum
 # find average number of visits by using the estimated from ADNI3 procedures manual at https://adni.loni.usc.edu/wp-content/uploads/2012/10/ADNI3-Procedures-Manual_v3.0_20170627.pdf
 # CN - 2 visits/year    MCI/AD - 1 visit/year
-avgNrVisits = nrCtlD3norm * 2 + nrMCID3norm * 1 + nrADD3norm * 1
+avgNrVisits = round(nrCtlD3norm * 1 + nrMCID3norm * 1 + nrADD3norm * 1)
 # print(np.concatenate((np.ones(int(nrCtlD3)) * 2, np.ones(int(nrMCID3)) * 1, np.ones(int(nrADD3)) * 1),axis=0))
-stdNrVisits = np.std(np.concatenate((np.ones(int(nrCtlD3)) * 2, np.ones(int(nrMCID3)) * 1, np.ones(int(nrADD3)) * 1),axis=0))
+stdNrVisits = np.std(np.concatenate((np.ones(int(nrCtlD3)) * 1, np.ones(int(nrMCID3)) * 1, np.ones(int(nrADD3)) * 1),axis=0))
 
 # % who have cognitive
 nrMMSE = float(np.sum(~np.isnan(d12oneYear.MMSE))) / nrVisits
@@ -201,21 +209,24 @@ nrFDG = float(np.sum(~np.in1d(d12oneYear.TMPINFR04_BAIPETNMRC_09_12_16, [' ', '-
 # % who have AV45
 nrAV45 = float(np.sum(~np.in1d(d12oneYear.CTX_LH_MEDIALORBITOFRONTAL_SIZE_UCBERKELEYAV45_10_17_16, [' ', '-4']))) / nrVisits
 # % who have AV1451
-nrAV1451 = float(np.sum(~np.in1d(d12oneYear.CTX_LH_SUPERIORPARIETAL_UCBERKELEYAV1451_10_17_16, [' ', '-4']))) / nrVisits
+#nrAV1451 = float(np.sum(~np.in1d(d12oneYear.CTX_LH_SUPERIORPARIETAL_UCBERKELEYAV1451_10_17_16, [' ', '-4']))) / nrVisits
+# in ADNI3 every subject will have a tau PET scan at baseline, so in theory we expect 50%. However, we'll consider
+# an estimate that is similar to AV45 ..
+nrAV1451 = nrAV45
 # % who have DIT
 nrDTI = float(np.sum(d12oneYear.FA_IFO_L_DTIROI_04_30_14 != ' ')) / nrVisits
 # % who have CSF
 nrCSF = float(np.sum(d12oneYear.ABETA_UPENNBIOMK9_04_19_17 != ' ')) / nrVisits
 
-print('nrSubjD2', nrSubjD2)
+# print('nrSubjD2', nrSubjD2)
 print('dropoutRate', dropoutRate)
 print('nrSubjD4', nrSubjD4)
 print('avgVisits', avgNrVisits)
 print('stdNrVisits', stdNrVisits)
-print('nrMMSE', nrMMSE)
 print('nrCTL', nrCtlD3)
 print('nrMCI', nrMCID3)
 print('nrAD', nrADD3)
+print('nrMMSE', nrMMSE)
 print('nrMRI', nrMRI)
 print('nrFDG', nrFDG)
 print('nrAV45', nrAV45)
