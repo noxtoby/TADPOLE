@@ -109,13 +109,14 @@ Xfull(:,3) = 0;
 % Estimate the age at scan for every subject visit, since the AGE column
 % only contains the age at baseline visit
 for s=1:nrUnqSubj
-  % Find the exams for this subject
+  %Find the exams for this subject
   subj_rows = RID_Col == unqSubj(s);
   subj_exam_dates = ExamMonth_Col(subj_rows);
   m = min(subj_exam_dates);
   yearsDiff = (subj_exam_dates - m)/12;
   
   %X(subj_rows,2)
+  
   assert(min(TADPOLE_Table.AGE(subj_rows)) == max(TADPOLE_Table.AGE(subj_rows)))
   Xfull(subj_rows,2) = TADPOLE_Table.AGE(subj_rows) + yearsDiff;
   %X(subj_rows,2)

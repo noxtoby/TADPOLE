@@ -16,7 +16,7 @@ TADPOLE_Table = readtable(tadpoleD1D2File,'Delimiter','comma','TreatAsEmpty',{''
 
 %* Target variables: check whether numeric and convert if necessary
 targetVariables = {'DX','ADAS13','Ventricles'};
-variablesToCheck = [{'RID','ICV_bl'},targetVariables]; % also check RosterID and IntraCranialVolume
+variablesToCheck = [{'RID','ICV_bl', 'AGE', 'APOE4'},targetVariables]; % also check RosterID and IntraCranialVolume
 for kt=1:length(variablesToCheck)
   if not(strcmpi('DX',variablesToCheck{kt}))
     if iscell(TADPOLE_Table.(variablesToCheck{kt}))
