@@ -8,13 +8,13 @@
 #12 Nov 2017
 
 print('Load data and select features')
-str_exp='C:/Users/Esther/Documents/TADPOLE/scripts/tadpole-bigr/'
 
 # Read in TADPOLE File
 import os
-os.chdir(str_exp)
 
-tadpoleD1D2File = str_exp + '/Data/TADPOLE_D1_D2.csv' 
+str_exp = ''
+
+tadpoleD1D2File = '../TADPOLE_D1_D2.csv' 
 
 import pandas as pd
 import numpy as np
@@ -45,7 +45,7 @@ Dtadpole=Dtadpole[['RID','Diagnosis','AGE', 'ADAS13','Ventricles','ICV_bl']].cop
 # Force values to numeric
 h = list(Dtadpole)
 for i in range(5,len(h)):
-    print [i],
+    print([i])
     if Dtadpole[h[i]].dtype != 'float64':
         Dtadpole[h[i]]=pd.to_numeric(Dtadpole[h[i]], errors='coerce')
 
@@ -53,7 +53,7 @@ for i in range(5,len(h)):
 urid = np.unique(Dtadpole['RID'].values)
 Dtadpole_sorted=pd.DataFrame(columns=h)
 for i in range(len(urid)):
-    print [i],
+    print([i])
     agei=Dtadpole.loc[Dtadpole['RID']==urid[i],'AGE']
     idx_sortedi=np.argsort(agei)
     D1=Dtadpole.loc[idx_sortedi.index[idx_sortedi]]
@@ -68,7 +68,7 @@ Dtadpole_sorted.to_csv(str_exp+'IntermediateData/BenchmarkSVMFeaturesTADPOLE.csv
 idx_d2=D2==1
 Dtadpole_RID = Dtadpole.loc[idx_d2,'RID']
 SD2=pd.Series(np.unique(Dtadpole_RID.values))
-SD2.to_csv(str_exp+'/IntermediateData/ToPredict_D2.csv',index=False)
+SD2.to_csv(str_exp+'IntermediateData/ToPredict_D2.csv',index=False)
 
 # SVM for TADPOLE
 print('Train SVM for Diagnosis and SVR for ADAS and Ventricles')
@@ -214,16 +214,16 @@ output.to_csv(str_out_final,header=True,index=False)
 print('Evaluate predictions')
 R=pd.read_csv('./IntermediateData/D4_dummy.csv')
 import evalOneSubmission as eos
-mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA, adasEstim, trueADASFilt = eos.evalOneSub(R,output)
+mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA = eos.evalOneSub(R,output)
 
-print 'Diagnosis:'
-print 'mAUC = ' + "%0.3f" % mAUC,
-print 'BAC = ' + "%0.3f" % bca
-print 'ADAS:'
-print 'MAE = ' + "%0.3f" % adasMAE, 
-print 'WES = ' + "%0.3f" % adasWES,
-print 'CPA = ' + "%0.3f" % adasCPA 
-print 'VENTS:'
-print 'MAE = ' + "%0.3e" % ventsMAE,
-print 'WES = ' + "%0.3e" % ventsWES,
-print 'CPA = ' + "%0.3f" % ventsCPA 
+print('Diagnosis:')
+print('mAUC = ' + "%0.3f" % mAUC)
+print('BAC = ' + "%0.3f" % bca)
+print('ADAS:')
+print('MAE = ' + "%0.3f" % adasMAE) 
+print('WES = ' + "%0.3f" % adasWES)
+print('CPA = ' + "%0.3f" % adasCPA)
+print('VENTS:')
+print('MAE = ' + "%0.3e" % ventsMAE)
+print('WES = ' + "%0.3e" % ventsWES)
+print('CPA = ' + "%0.3f" % ventsCPA)

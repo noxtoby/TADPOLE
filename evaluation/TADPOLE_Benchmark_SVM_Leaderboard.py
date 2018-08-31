@@ -8,13 +8,14 @@
 #12 Nov 2017
 
 print('Load data and select features')
-str_exp='C:/Users/Esther/Documents/TADPOLE/scripts/tadpole-bigr/'
+#str_exp='C:/Users/Esther/Documents/TADPOLE/scripts/tadpole-bigr/'
+str_exp = './'
 
 # Read in TADPOLE File
 import os
 os.chdir(str_exp)
 
-tadpoleD1D2File = str_exp + '/Data/TADPOLE_D1_D2.csv' 
+tadpoleD1D2File = str_exp + 'TADPOLE_D1_D2.csv'
 
 import pandas as pd
 import numpy as np
@@ -37,7 +38,7 @@ Dtadpole=Dtadpole.rename(columns={'DXCHANGE':'Diagnosis'})
 h = list(Dtadpole)
 
 # Select Leaderboard subjects
-tadpoleLB1LB2File = str_exp + '/Data/TADPOLE_LB1_LB2.csv'
+tadpoleLB1LB2File = str_exp + 'TADPOLE_LB1_LB2.csv'
 LB_Table = pd.read_csv(tadpoleLB1LB2File)
 LB=LB_Table['LB1']+LB_Table['LB2']
 idx_lb=LB.values>=1
@@ -49,7 +50,7 @@ Dtadpole=Dtadpole[['RID','Diagnosis','AGE', 'ADAS13','Ventricles','ICV_bl']].cop
 # Force values to numeric
 h = list(Dtadpole)
 for i in range(5,len(h)):
-    print [i],
+    print([i])
     if Dtadpole[h[i]].dtype != 'float64':
         Dtadpole[h[i]]=pd.to_numeric(Dtadpole[h[i]], errors='coerce')
 
@@ -57,7 +58,7 @@ for i in range(5,len(h)):
 urid = np.unique(Dtadpole['RID'].values)
 Dtadpole_sorted=pd.DataFrame(columns=h)
 for i in range(len(urid)):
-    print [i],
+    print([i])
     agei=Dtadpole.loc[Dtadpole['RID']==urid[i],'AGE']
     idx_sortedi=np.argsort(agei)
     D1=Dtadpole.loc[idx_sortedi.index[idx_sortedi]]
@@ -212,23 +213,22 @@ output=pd.DataFrame(o1, columns=['RID','Forecast Month','Forecast Date','CN rela
 output['Forecast Month'] = output['Forecast Month'].astype(int)
 output['Forecast Date'] = ym1
 
-str_out_final = os.path.join(str_exp, 'IntermediateData','TADPOLE_Submission_Leaderboard_BenchmarkSVM.csv')
-output.to_csv(str_out_final,header=True,index=False)
+output.to_csv('TADPOLE_Submission_Leaderboard_BenchmarkSVM.csv',header=True,index=False)
 
 
 print('Evaluate predictions')
-R=pd.read_csv('./Data/TADPOLE_LB4.csv')
+R=pd.read_csv('./TADPOLE_LB4.csv')
 import evalOneSubmission as eos
-mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA, adasEstim, trueADASFilt = eos.evalOneSub(R,output)
+mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA = eos.evalOneSub(R,output)
 
-print 'Diagnosis:'
-print 'mAUC = ' + "%0.3f" % mAUC,
-print 'BAC = ' + "%0.3f" % bca
-print 'ADAS:'
-print 'MAE = ' + "%0.3f" % adasMAE, 
-print 'WES = ' + "%0.3f" % adasWES,
-print 'CPA = ' + "%0.3f" % adasCPA 
-print 'VENTS:'
-print 'MAE = ' + "%0.3e" % ventsMAE,
-print 'WES = ' + "%0.3e" % ventsWES,
-print 'CPA = ' + "%0.3f" % ventsCPA 
+print('Diagnosis:')
+print('mAUC = ' + "%0.3f" % mAUC)
+print('BAC = ' + "%0.3f" % bca)
+print('ADAS:')
+print('MAE = ' + "%0.3f" % adasMAE)
+print('WES = ' + "%0.3f" % adasWES)
+print('CPA = ' + "%0.3f" % adasCPA)
+print('VENTS:')
+print('MAE = ' + "%0.3e" % ventsMAE)
+print('WES = ' + "%0.3e" % ventsWES)
+print('CPA = ' + "%0.3f" % ventsCPA)
