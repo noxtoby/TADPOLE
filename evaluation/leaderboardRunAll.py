@@ -118,42 +118,80 @@ class DropboxObj:
 
 def writeHTMLtable(evalResults, htmlFile, forecastFiles, fileDatesRemote):
   html = open(htmlFile, 'w')
-  text = r'''
+
+  ## Add this manually in skeleton13.css in the dropbox folder under ProAD/public_html/css
+  manuallyAddToPageCssStyle = r'''
   <style>
 tr.d0 td {
   background-color: #ffffff;
   color: black;
+  max-width: 50px;
+  overflow: wrap;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
 }
 tr.d1 td {
   background-color: #ffffff;
   color: black;
+  max-width: 50px;
+  overflow: wrap;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
 }
 </style>
 '''
-  text += 'Table last updated on %s. Update frequency: every 20 minutes' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M (UTC+0)') )
-  text += '<table  class="sortable smallfont" style="width: 880px; table-layout: fixed;"  >\n'
-  text += r'''
-  <col width="30">
-  <col width="70">
-  <col width="35">
-  <col width="30">
-  <col width="40">
-  <col width="40">
-  <col width="40">
-  <col width="40">
-  <col width="35">
-  <col width="35">
-  <col width="60">'''
 
-  trStartHead = r'''<thead>
-	<tr class="d1"><td>'''
-  trEndHead = r'''</td></tr>
-</thead>
-'''
-  text += trStartHead
-  text += '</td><td>'.join(['RANK', 'TEAM NAME', 'MAUC', 'BCA', 'ADAS MAE', 'VENTS MAE',
-    'ADAS WES', 'VENTS WES', 'ADAS CPA', 'VENTS CPA', 'DATE'])
-  text += trEndHead + '<tbody>'
+
+  text = 'Table last updated on %s. ' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M (UTC+0)') )
+  text += '<table  class="comictable sortable smallfont" style="width: 400px; table-layout: fixed; align:center"  >\n'
+  # text += '<table  class="table" >\n'
+  # text += r'''
+  # <col width="15">
+  # <col width="40">
+  # <col width="20">
+  # <col width="30">
+  # <col width="40">
+  # <col width="40">
+  # <col width="40">
+  # <col width="40">
+  # <col width="35">
+  # <col width="35">
+  # <col width="60">'''
+  #
+  #
+
+
+
+#   trStartHead = r'''<thead>
+# 	<tr class="d1"><td>'''
+#   trEndHead = r'''</td></tr>
+# </thead>
+# '''
+#   text += trStartHead
+#   text += '</td><td>'.join(['RANK', 'TEAM NAME', 'MAUC', 'BCA', 'ADAS MAE', 'VENTS MAE',
+#     'ADAS WES', 'VENTS WES', 'ADAS CPA', 'VENTS CPA', 'DATE'])
+
+  text += r'''
+  <thead>
+       <tr class="ldbHeader">
+           <th style="width: 60px"> RANK<br></th>
+           <th style="width: 60px"> TEAM NAME</th>
+           <th style="width: 60px"> MAUC</th>
+           <th style="width: 60px"> BCA</th>
+           <th style="width: 60px"> ADAS MAE</th>
+           <th style="width: 60px"> VENTS MAE</th>
+           <th style="width: 60px"> ADAS WES</th>
+           <th style="width: 60px"> VENTS WES</th>
+           <th style="width: 60px"> ADAS CPA</th>
+           <th style="width: 60px"> VENTS CPA</th>
+           <th style="width: 60px"> DATE</th>	   	
+     </tr>
+   </thead>
+  
+  '''
+
+  # text += trEndHead + '<tbody>'
+  text += '<tbody>'
   nrFiles = len(forecastFiles)
   # print(evalResults.shape)
   # print(evalResults['MAUC'])
