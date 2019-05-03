@@ -1,5 +1,5 @@
 function [ADAS13_Col, Ventricles_Col, ICV_Col, Ventricles_ICV_Col, ...
-  CLIN_STAT_Col, RID_Col, ExamMonth_Col, D2_col] = extractSalientColumns(TADPOLE_Table)
+  CLIN_STAT_Col, RID_Col, ExamMonth_Col, AGE_Bl_Col, Viscode_Col, D2_col] = extractSalientColumns(TADPOLE_Table)
 
 %* Copy numeric target variables into arrays. Missing data is encoded as -1
 % ADAS13 scores 
@@ -29,17 +29,25 @@ RID_Col = TADPOLE_Table.RID;
 RID_Col(isnan(RID_Col)) = -1; % missing data encoded as -1
 
 %* Compute months since Jan 2000 for each exam date
-EXAMDATE = cell2mat(TADPOLE_Table.EXAMDATE);
+%EXAMDATE = cell2mat(TADPOLE_Table.EXAMDATE);
 ExamMonth_Col = zeros(length(TADPOLE_Table.EXAMDATE),1);
 for i=1:length(TADPOLE_Table.EXAMDATE)
-    ExamMonth_Col(i) = (str2num(TADPOLE_Table.EXAMDATE{i}(1:4))-2000)*12 + str2num(TADPOLE_Table.EXAMDATE{i}(6:7));
+%    ExamMonth_Col(i) = (str2num(TADPOLE_Table.EXAMDATE{i}(1:4))-2000)*12 + str2num(TADPOLE_Table.EXAMDATE{i}(6:7));
+    ExamMonth_Col(i) = (year(TADPOLE_Table.EXAMDATE(i))-2000)*12 + month(TADPOLE_Table.EXAMDATE(i));
 end
+
+AGE_Bl_Col = TADPOLE_Table.AGE;
+AGE_Bl_Col(isnan(AGE_Bl_Col)) = -1;
+
+Viscode_Col = TADPOLE_Table.VISCODE;
 
 %* Copy the column specifying membership of D2 into an array.
-if iscell(TADPOLE_Table.D2)
-  D2_col = str2num(cell2mat(TADPOLE_Table.D2));
+if ismember('D2', TADPOLE_Table.Properties.VariableNames)
+  if iscell(TADPOLE_Table.D2)
+    D2_col = str2num(cell2mat(TADPOLE_Table.D2));
+  else
+    D2_col = TADPOLE_Table.D2;
+  end
 else
-  D2_col = TADPOLE_Table.D2;
-end
-
+  D2_col = nan;
 end

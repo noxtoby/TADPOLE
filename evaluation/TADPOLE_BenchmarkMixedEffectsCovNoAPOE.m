@@ -1,6 +1,6 @@
-% TADPOLE_BenchmarkMixedEffectsCov.m
+% TADPOLE_BenchmarkMixedEffectsCovNoAPOE.m
 %
-% Submission using linear mixed effects model on ADAS13 and VentVol (+ APOE as covariate).
+% Submission using linear mixed effects model on ADAS13 and VentVol.
 %
 % Adapted by Razvan Marinescu from Daniel Alexander's SimpleForecastFPC02.m script
 %============
@@ -13,7 +13,7 @@
 dataLocationD1D2 = '../'; % parent directory
 
 tadpoleD1D2File = fullfile(dataLocationD1D2,'TADPOLE_D1_D2.csv');
-outputFile = 'TADPOLE_Submission_BenchmarkMixedEffectsCov.csv';
+outputFile = 'TADPOLE_Submission_BenchmarkMixedEffectsCovNoAPOE.csv';
 
 TADPOLE_Table = readTadpoleD1D2(tadpoleD1D2File);
 
@@ -58,7 +58,7 @@ nForecasts = 5*12; % forecast 5 years (60 months).
 % 1. Clinical status forecasts
 %    i.e. relative likelihood of NL, MCI, and Dementia (3 numbers)
 CLIN_STAT_forecast = zeros(N_D2, nForecasts, 3);
-% 2. ADAS13 forecasts 
+% 2. ADAS13 forecasts TADPOLE_BenchmarkMixedEffectsCovNoAPOE
 %    (best guess, upper and lower bounds on 50% confidence interval)
 ADAS13_forecast = zeros(N_D2, nForecasts, 3);
 % 3. Ventricles volume forecasts 
@@ -83,8 +83,7 @@ nrUnqSubj = length(unqSubj);
 
 %% Fit Mixed Effects Model as follows:
 % response (Y) -ADAS 13
-% design matrix (X) - [1, AgeAtVisit x (APOE=0), AgeAtVisit x (APOE>0), random effects] (1 random parameter per subject)
-% Covariates - APOE4 (i.e. fit different slope for APOE=0 and APOE>=1)
+% design matrix (X) - [1, AgeAtVisit , random effects] (1 random parameter per subject)
 % task: solve for beta: Y = Xb, where beta are the linear parameters 
 % beta = [intercept, population_slope_APOE=0, population_slope_APOE>0, shift_subj_1, shift_subj_2, ...]
 % fixed parameters: intercept, population_slope_APOE=0, population_slope_APOE>0
@@ -92,7 +91,7 @@ nrUnqSubj = length(unqSubj);
 % there is actually one extra degree of freedom (first parameter is unnecessary, but predictions should still be the same)
 
 
-nrFixedParams = 3;
+nrFixedParams = 2;
 nrRandomParams = nrUnqSubj;
 
 % Build the design matrix X
@@ -100,7 +99,6 @@ Xfull = zeros(nrVisits, nrFixedParams+nrRandomParams);
 
 Xfull(:,1) = 1;
 Xfull(:,2) = 0;
-Xfull(:,3) = 0;
 
 % Estimate the age at scan for every subject visit, since the AGE column
 % only contains the age at baseline visit
@@ -115,16 +113,12 @@ for s=1:nrUnqSubj
   
   assert(min(TADPOLE_Table.AGE(subj_rows)) == max(TADPOLE_Table.AGE(subj_rows)))
   Xfull(subj_rows,2) = TADPOLE_Table.AGE(subj_rows) + yearsDiff;
-  %X(subj_rows,2)
-  Xfull(subj_rows,3) = TADPOLE_Table.AGE(subj_rows) + yearsDiff;
   
   % also map the entries in the design matrix corresponding to individual
   % subjects
   Xfull(subj_rows, s+nrFixedParams) = 1;
 end
 
-Xfull(:,2) = Xfull(:,2) .* (TADPOLE_Table.APOE4 == 0);
-Xfull(:,3) = Xfull(:,3) .* (TADPOLE_Table.APOE4 > 0);
 
 Yadas = ADAS13_Col;
 filterMaskADAS = (Yadas ~= -1) & (~isnan(Xfull(:,3)));
@@ -154,10 +148,8 @@ for i=1:N_D2
     m = min(subj_exam_dates);
     yearsDiff = (monthsToForecastInd - m)/12;
     XpredAgeCurr = (TADPOLE_Table.AGE(subj_rows(1)) + yearsDiff)';
-    XpredAgeAPOE0Curr = XpredAgeCurr * (TADPOLE_Table.APOE4(subj_rows(1)) == 0);
-    XpredAgeAPOE12Curr =  XpredAgeCurr * (TADPOLE_Table.APOE4(subj_rows(1)) > 0);
     
-    XpredFull = [ones(size(XpredAgeCurr)), XpredAgeAPOE0Curr, XpredAgeAPOE12Curr, ones(size(XpredAgeCurr))];
+    XpredFull = [ones(size(XpredAgeCurr)), XpredAgeCurr, ones(size(XpredAgeCurr))];
     ADASpredCurrMixed = XpredFull * [betaADAS(1:nrFixedParams); betaADAS(unqRIDsBeta == D2_SubjList(i))];
     VentsPredCurrMixed = XpredFull * [betaVents(1:nrFixedParams); betaVents(unqRIDsBeta == D2_SubjList(i))];
     

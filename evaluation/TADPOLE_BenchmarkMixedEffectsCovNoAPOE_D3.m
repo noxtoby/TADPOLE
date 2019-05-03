@@ -13,13 +13,38 @@
 dataLocationD1D2 = '../'; % parent directory
 
 tadpoleD1D2File = fullfile(dataLocationD1D2,'TADPOLE_D1_D2.csv');
-outputFile = 'TADPOLE_Submission_BenchmarkMixedEffectsCov.csv';
+tadpoleD3File = fullfile(dataLocationD1D2,'TADPOLE_D3.csv');
+outputFile = 'TADPOLE_Submission_BenchmarkMixedEffectsCov_D3.csv';
 
-TADPOLE_Table = readTadpoleD1D2(tadpoleD1D2File);
+TADPOLE_TableD12 = readTadpoleD1D2(tadpoleD1D2File);
+TADPOLE_TableD3 = readTadpoleD3(tadpoleD3File);
+
+TADPOLE_TableD12 = TADPOLE_TableD12(TADPOLE_TableD12.D2 == 0,:);
 
 [ADAS13_Col, Ventricles_Col, ICV_Col, Ventricles_ICV_Col, ...
-  CLIN_STAT_Col, RID_Col, ExamMonth_Col, D2_Col] ...
-  = extractSalientColumns(TADPOLE_Table);
+  CLIN_STAT_Col, RID_Col, ExamMonth_Col, AGE_Bl_Col, Viscode_Col, D3_Col] ...
+  = extractSalientColumns(TADPOLE_TableD12);
+
+TADPOLE_TableD3.ICV_bl = TADPOLE_TableD3.ICV;
+[ADAS13_Col_D3, Ventricles_Col_D3, ICV_Col_D3, Ventricles_ICV_Col_D3, ...
+  CLIN_STAT_Col_D3, RID_Col_D3, ExamMonth_Col_D3, AGE_Bl_Col_D3, Viscode_Col_D3, ~] ...
+  = extractSalientColumns(TADPOLE_TableD3);
+
+ADAS13_Col = [ADAS13_Col; ADAS13_Col_D3];
+Ventricles_Col = [Ventricles_Col; Ventricles_Col_D3];
+ICV_Col = [ICV_Col; ICV_Col_D3];
+Ventricles_ICV_Col = [Ventricles_ICV_Col; Ventricles_ICV_Col_D3];
+CLIN_STAT_Col = [CLIN_STAT_Col; CLIN_STAT_Col_D3];
+RID_Col = [RID_Col; RID_Col_D3];
+ExamMonth_Col = [ExamMonth_Col; ExamMonth_Col_D3];
+D3_Col = [D3_Col; ones(size(ExamMonth_Col_D3))];
+AGE_Bl_Col = [AGE_Bl_Col; AGE_Bl_Col_D3];
+Viscode_Col = [Viscode_Col; Viscode_Col_D3];
+
+% test there was no leakage of data from D12 that shoudn't be there
+assert size(RID_Col(RID_Col == 2), 1) == 1
+visCodeSubj2 = (Viscode_Col(RID_Col == 2));
+assert visCodeSubj2{1} == 'm120'
 
 % choose whether to plot the data.
 plotDataFlag = 0;
@@ -30,9 +55,9 @@ display('Fitting Gaussian models...');
 
 % estimate mean and variance of ADAS given CN, MCI, AD.
 
-% Find all LB1 entries that are NL and have ADAS13.
+% Find all D1 entries that are NL and have ADAS13.
 NL_and_ADAS13 = find(strcmp(CLIN_STAT_Col, 'NL') & ADAS13_Col>-1);
-% Get the states of the list of ADAS13 scores for these.
+% Get the stats of the list of ADAS13 scores for these.
 NL_ADAS13_mean = mean(ADAS13_Col(NL_and_ADAS13));
 NL_ADAS13_std = std(ADAS13_Col(NL_and_ADAS13));
 
@@ -48,22 +73,22 @@ AD_ADAS13_std = std(ADAS13_Col(AD_and_ADAS13));
 
 display('Generating forecast ...')
 
-%* Get the list of subjects to forecast from LB1_2 - the ordering is the
+%* Get the list of subjects to forecast from D3 - the ordering is the
 %* same as in the submission template.
-d2Inds = find(D2_Col);
-D2_SubjList = unique(RID_Col(d2Inds));
-N_D2 = length(D2_SubjList);
+d3Inds = find(D3_Col);
+D3_SubjList = unique(RID_Col(d3Inds));
+N_D3 = length(D3_SubjList);
 
 nForecasts = 5*12; % forecast 5 years (60 months).
 % 1. Clinical status forecasts
 %    i.e. relative likelihood of NL, MCI, and Dementia (3 numbers)
-CLIN_STAT_forecast = zeros(N_D2, nForecasts, 3);
+CLIN_STAT_forecast = zeros(N_D3, nForecasts, 3);
 % 2. ADAS13 forecasts 
 %    (best guess, upper and lower bounds on 50% confidence interval)
-ADAS13_forecast = zeros(N_D2, nForecasts, 3);
+ADAS13_forecast = zeros(N_D3, nForecasts, 3);
 % 3. Ventricles volume forecasts 
 %    (best guess, upper and lower bounds on 50% confidence interval)
-Ventricles_ICV_forecast = zeros(N_D2, nForecasts, 3);
+Ventricles_ICV_forecast = zeros(N_D3, nForecasts, 3);
 
 display_info = 1; % Useful for checking and debugging (see below)
 
@@ -83,16 +108,16 @@ nrUnqSubj = length(unqSubj);
 
 %% Fit Mixed Effects Model as follows:
 % response (Y) -ADAS 13
-% design matrix (X) - [1, AgeAtVisit x (APOE=0), AgeAtVisit x (APOE>0), random effects] (1 random parameter per subject)
+% design matrix (X) - [1, AgeAtVisit, random effects] (1 random parameter per subject)
 % Covariates - APOE4 (i.e. fit different slope for APOE=0 and APOE>=1)
 % task: solve for beta: Y = Xb, where beta are the linear parameters 
-% beta = [intercept, population_slope_APOE=0, population_slope_APOE>0, shift_subj_1, shift_subj_2, ...]
-% fixed parameters: intercept, population_slope_APOE=0, population_slope_APOE>0
-% random parameters: shift_subj_1, shift_subj_2, ...
+% beta = [intercept, population_slope, random_effect_subj_1, random_effect_subj_2, ...]
+% fixed parameters: intercept, population_slope
+% random parameters: random_effect_subj_1, random_effect_subj_2, ...
 % there is actually one extra degree of freedom (first parameter is unnecessary, but predictions should still be the same)
 
 
-nrFixedParams = 3;
+nrFixedParams = 2;
 nrRandomParams = nrUnqSubj;
 
 % Build the design matrix X
@@ -100,7 +125,6 @@ Xfull = zeros(nrVisits, nrFixedParams+nrRandomParams);
 
 Xfull(:,1) = 1;
 Xfull(:,2) = 0;
-Xfull(:,3) = 0;
 
 % Estimate the age at scan for every subject visit, since the AGE column
 % only contains the age at baseline visit
@@ -113,21 +137,17 @@ for s=1:nrUnqSubj
   
   %X(subj_rows,2)
   
-  assert(min(TADPOLE_Table.AGE(subj_rows)) == max(TADPOLE_Table.AGE(subj_rows)))
-  Xfull(subj_rows,2) = TADPOLE_Table.AGE(subj_rows) + yearsDiff;
-  %X(subj_rows,2)
-  Xfull(subj_rows,3) = TADPOLE_Table.AGE(subj_rows) + yearsDiff;
+  assert(min(AGE_Bl_Col(subj_rows)) == max(AGE_Bl_Col(subj_rows)))
+  Xfull(subj_rows,2) = AGE_Bl_Col(subj_rows) + yearsDiff;
   
   % also map the entries in the design matrix corresponding to individual
   % subjects
   Xfull(subj_rows, s+nrFixedParams) = 1;
 end
 
-Xfull(:,2) = Xfull(:,2) .* (TADPOLE_Table.APOE4 == 0);
-Xfull(:,3) = Xfull(:,3) .* (TADPOLE_Table.APOE4 > 0);
-
 Yadas = ADAS13_Col;
-filterMaskADAS = (Yadas ~= -1) & (~isnan(Xfull(:,3)));
+%filterMaskADAS = (Yadas ~= -1) & (~isnan(Xfull(:,3)));
+filterMaskADAS = (Yadas ~= -1);
 YadasFilt = Yadas(filterMaskADAS);
 Xadas = Xfull(filterMaskADAS,:);
 
@@ -141,25 +161,19 @@ YventsFilt = Yvents(filterMaskVents);
 Xvents = Xfull(filterMaskVents,:);
 betaVents = pinv(Xvents'*Xvents)*Xvents'*YventsFilt;
 
-for i=1:N_D2
+for i=1:N_D3
     
-    subj_rows = find(RID_Col==D2_SubjList(i) & D2_Col);
+    subj_rows = find(RID_Col==D3_SubjList(i) & D3_Col);
     subj_exam_dates = ExamMonth_Col(subj_rows);
-
-    exams_with_CLIN_STAT = [];
-    exams_with_ADAS13 = find(ADAS13_Col(subj_rows)>0);
-    exams_with_ventsv = find(Ventricles_ICV_Col(subj_rows)>0);
-    
+   
     % compute mixed effects model predictions
     m = min(subj_exam_dates);
     yearsDiff = (monthsToForecastInd - m)/12;
-    XpredAgeCurr = (TADPOLE_Table.AGE(subj_rows(1)) + yearsDiff)';
-    XpredAgeAPOE0Curr = XpredAgeCurr * (TADPOLE_Table.APOE4(subj_rows(1)) == 0);
-    XpredAgeAPOE12Curr =  XpredAgeCurr * (TADPOLE_Table.APOE4(subj_rows(1)) > 0);
+    XpredAgeCurr = (AGE_Bl_Col(subj_rows(1)) + yearsDiff)';
     
-    XpredFull = [ones(size(XpredAgeCurr)), XpredAgeAPOE0Curr, XpredAgeAPOE12Curr, ones(size(XpredAgeCurr))];
-    ADASpredCurrMixed = XpredFull * [betaADAS(1:nrFixedParams); betaADAS(unqRIDsBeta == D2_SubjList(i))];
-    VentsPredCurrMixed = XpredFull * [betaVents(1:nrFixedParams); betaVents(unqRIDsBeta == D2_SubjList(i))];
+    XpredFull = [ones(size(XpredAgeCurr)), XpredAgeCurr, ones(size(XpredAgeCurr))];
+    ADASpredCurrMixed = XpredFull * [betaADAS(1:nrFixedParams); betaADAS(unqRIDsBeta == D3_SubjList(i))];
+    VentsPredCurrMixed = XpredFull * [betaVents(1:nrFixedParams); betaVents(unqRIDsBeta == D3_SubjList(i))];
     
     ADAS13_forecast(i,:,1) = ADASpredCurrMixed;
     ADAS13_forecast(i,:,2) = ADASpredCurrMixed - ADAS_default_50pcMargin;
@@ -180,6 +194,10 @@ for i=1:N_D2
     CLIN_STAT_forecast(i,:,3) = AD_LikFromADAS13./(NL_LikFromADAS13+MCI_LikFromADAS13+AD_LikFromADAS13); 
     
     if plotDataFlag
+      exams_with_CLIN_STAT = [];
+      exams_with_ADAS13 = find(ADAS13_Col(subj_rows)>0);
+      exams_with_ventsv = find(Ventricles_ICV_Col(subj_rows)>0);
+    
       % plot ADAS13
       figure(1);
       clf
@@ -187,7 +205,7 @@ for i=1:N_D2
       hold on
       plot(monthsToForecastInd,ADAS13_forecast(i,:,1), 'r', 'LineWidth',2);
       hold on
-      scatter(scanDateLB4_Col(subj_rows_lb4),LB4_Table.ADAS13(subj_rows_lb4),30,'blue') 
+      scatter(scanDateLB4_Col(subj_rows_lb4),LB4_Table.ADAS13(subj_rows_lb4),30,'blue')
 
       % plot Ventricles
       figure(2);
@@ -200,6 +218,6 @@ for i=1:N_D2
     end
 end
 
-writePredictionsToFile(outputFile, nForecasts, N_D2, D2_SubjList, ...
+writePredictionsToFile(outputFile, nForecasts, N_D3, D3_SubjList, ...
   CLIN_STAT_forecast, ADAS13_forecast, Ventricles_ICV_forecast, predictionStartDate);
 
