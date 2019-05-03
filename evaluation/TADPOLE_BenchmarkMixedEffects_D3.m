@@ -14,7 +14,7 @@ dataLocationD1D2 = '../'; % parent directory
 
 tadpoleD1D2File = fullfile(dataLocationD1D2,'TADPOLE_D1_D2.csv');
 tadpoleD3File = fullfile(dataLocationD1D2,'TADPOLE_D3.csv');
-outputFile = 'TADPOLE_Submission_BenchmarkMixedEffectsCov_D3.csv';
+outputFile = 'TADPOLE_Submission_BenchmarkMixedEffects-ID-5.csv';
 
 TADPOLE_TableD12 = readTadpoleD1D2(tadpoleD1D2File);
 TADPOLE_TableD3 = readTadpoleD3(tadpoleD3File);
