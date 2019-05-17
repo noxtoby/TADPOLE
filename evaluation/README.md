@@ -1,5 +1,6 @@
 
-######## Evaluation scripts for used in TADPOLE Challenge 2017 ##########
+## Evaluation scripts for used in TADPOLE Challenge 2017 ##
+
 Requires: Python version 3 (python3), and some dependencies.
 
 Scripts provided in this subfolder are for two main purposes:
