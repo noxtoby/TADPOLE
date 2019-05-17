@@ -145,10 +145,6 @@ d2Inds = np.where(D3_col)[0]
 D2_SubjList = np.unique(RID_Col[d2Inds])
 N_D2 = len(D2_SubjList)
 
-# As opposed to the actual submission, we require 84 months of forecast
-# data. This is because some ADNI2 subjects in LB4 have visits as long as
-# 7 years after their last ADNI1 visit in LB2
-
 # * Create arrays to contain the 84 monthly forecasts for each LB2 subject
 nForecasts = 5 * 12  # forecast 7 years (84 months).
 # 1. Clinical status forecasts
@@ -285,7 +281,7 @@ submission_table = pd.DataFrame()
 submission_table['RID'] = D2_SubjList.repeat(nForecasts)
 submission_table['ForecastMonth'] = np.tile(range(1, nForecasts + 1), (N_D2, 1)).flatten()
 # * Submission dates - compare with submission template
-startDate = dt.datetime(2010, 5, 1)
+startDate = dt.datetime(2018, 1, 1)
 endDate = startDate + relativedelta(months=+nForecasts - 1)
 ForecastDates = [startDate]
 while ForecastDates[-1] < endDate:
