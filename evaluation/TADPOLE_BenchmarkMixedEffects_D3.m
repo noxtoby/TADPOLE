@@ -42,9 +42,9 @@ AGE_Bl_Col = [AGE_Bl_Col; AGE_Bl_Col_D3];
 Viscode_Col = [Viscode_Col; Viscode_Col_D3];
 
 % test there was no leakage of data from D12 that shoudn't be there
-assert size(RID_Col(RID_Col == 2), 1) == 1
+assert(size(RID_Col(RID_Col == 2), 1) == 1)
 visCodeSubj2 = (Viscode_Col(RID_Col == 2));
-assert visCodeSubj2{1} == 'm120'
+assert(strcmp(visCodeSubj2{1}, 'm120'))
 
 % choose whether to plot the data.
 plotDataFlag = 0;
