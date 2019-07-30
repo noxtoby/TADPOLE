@@ -179,7 +179,7 @@ for i=1:N_D2
       hold on
       plot(monthsToForecastInd,ADAS13_forecast(i,:,1), 'r', 'LineWidth',2);
       hold on
-      scatter(scanDateLB4_Col(subj_rows_lb4),LB4_Table.ADAS13(subj_rows_lb4),30,'blue') 
+      scatter(scanDateLB4_Col(subj_rows_lb4),LB4_Table.ADAS13(subj_rows_lb4),30,'blue')
 
       % plot Ventricles
       figure(2);
