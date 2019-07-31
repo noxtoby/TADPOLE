@@ -413,7 +413,7 @@ if __name__ == '__main__':
   evalResFile = '%s/evalResAllD4Live.npz' % submissionsFld
   dropboxRemoteFolder = '/ProAD/public_html'
   uploadsFldRemote = '/ProAD/uploads'
-  d4File = '../../evaluation/TADPOLE_D4_corr.csv'
+  d4File = '../TADPOLE_D4_corr.csv'
   ldbDropbox = DropboxObj()
 
   if args.fast:
