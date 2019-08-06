@@ -156,7 +156,7 @@ tr.d1 td {
 </style>
 '''
 
-  text = 'Table last updated on %s. ' % (datetime.now().strftime('%Y-%m-%d %H:%M (BST +0)'))
+  text = 'Table last updated on %s. Update frequency: every 5 minutes' % (datetime.now().strftime('%Y-%m-%d %H:%M (BST +0)'))
   text += '<table  class="table table-dark table-striped table-hover table-sm dataTable sortable" style="align:center"  >\n'
 
   text += r'''
