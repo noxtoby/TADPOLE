@@ -156,24 +156,27 @@ tr.d1 td {
 </style>
 '''
 
-  text = '<table  class="table table-dark table-striped table-hover table-sm dataTable sortable" style="align:center"  >\n'
+  text = 'Table last updated on %s. ' % (datetime.now().strftime('%Y-%m-%d %H:%M (BST +0)'))
+  text += '<table  class="table table-dark table-striped table-hover table-sm dataTable sortable" style="align:center"  >\n'
 
   text += r'''
   <thead>
-       <tr class="d4Header">
-           <th style="width:60px"> RANK<br></th>
-           <th style="width:60px"> FILE NAME</th>
-           <th style="width:30px"> MAUC RANK</th>
-           <th style="width:60px"> MAUC</th>
-           <th style="width:60px"> BCA</th>
-           <th style="width:30px"> ADAS RANK</th>
-           <th style="width:60px"> ADAS MAE</th>
-           <th style="width:60px"> ADAS WES</th>
-           <th style="width:60px"> ADAS CPA</th>
-           <th style="width:60px"> VENTS RANK</th>
-           <th style="width:60px"> VENTS MAE</th>
-           <th style="width:60px"> VENTS WES</th>
-           <th style="width:60px"> VENTS CPA</th> 	
+       <tr class="d4HeaderLive">
+           <th style="width:50px"> RANK<br></th>
+           <th style="width:80px"> FILE NAME</th>
+           <th style="width:50px"> MAUC RANK</th>
+           <th style="width:50px"> MAUC</th>
+           <th style="width:50px"> BCA</th>
+           <th style="width:50px"> ADAS RANK</th>
+           <th style="width:50px"> ADAS MAE</th>
+           <th style="width:50px"> ADAS WES</th>
+           <th style="width:50px"> ADAS CPA</th>
+           <th style="width:50px"> VENTS RANK</th>
+           <th style="width:50px"> VENTS MAE</th>
+           <th style="width:50px"> VENTS WES</th>
+           <th style="width:50px"> VENTS CPA</th> 	
+           <th style="width:80px"> DATE</th> 	
+           
      </tr>
    </thead>
 
@@ -183,16 +186,17 @@ tr.d1 td {
     'RANK ADAS', 'ADAS MAE', 'ADAS WES', 'ADAS CPA', 'RANK VENTS', 'VENTS MAE', 'VENTS WES', 'VENTS CPA']
   text += '<tbody>'
   evalResultsPerm = evalResults.loc[:, colsToShow]
-  formatStrsMeasures = ['%.1f', '%.3f', '%.3f', '%.1f', '%.2f', '%.2f', '%.2f', '%.1f', '%.2f', '%.2f', '%.2f']
+  formatStrsMeasures = ['%.1f', '%.3f', '%.3f', '%.1f', '%.2f', '%.2f', '%.2f', '%.1f', '%.2f', '%.2f', '%.2f', '%s']
   # print(list(zip(formatStrsMeasures, evalResultsPerm.loc[0, :])))
   # asda
   for f in range(evalResults['MAUC'].shape[0]):
     # text += '\n   <tr class="d%d">' % (f % 2)
-    text += '\n   <tr class="d2">'
+    text += '\n   <tr class="rowD4Live">'
     text += '<td>%s</td>' % formatStrRemoveNan('%.1f',evalResults['RANK'].iloc[f])
     text += '<td>%s</td><td>' % evalResults['FileName'].iloc[f]
     text += '</td><td>'.join(
       [formatStrRemoveNan(strFmt,n) for strFmt, n in zip(formatStrsMeasures, evalResultsPerm.loc[f, :])])
+    text += '<td class="rowD4LiveDate">%s</td>' % evalResults.loc[f, 'Date'].strftime('%Y-%m-%d %H:%M')
     text += '</td></tr>\n'
 
   text += '</tbody>\n</table>'
@@ -218,18 +222,18 @@ def convRankToStr(rankVector):
 
 def addOtherStatsTable(resTable):
 
-  notNanMaskMAUC = np.logical_not(np.isnan(np.array(resTable.as_matrix(columns=['MAUC']).reshape(-1), float)))
-  notNanMaskADAS = np.logical_not(np.isnan(np.array(resTable.as_matrix(columns=['ADAS MAE']).reshape(-1), float)))
-  notNanMaskVents = np.logical_not(np.isnan(np.array(resTable.as_matrix(columns=['VENTS MAE']).reshape(-1), float)))
+  notNanMaskMAUC = np.logical_not(np.isnan(np.array(resTable.loc[:, 'MAUC'].values.reshape(-1), float)))
+  notNanMaskADAS = np.logical_not(np.isnan(np.array(resTable.loc[:, 'ADAS MAE'].values.reshape(-1), float)))
+  notNanMaskVents = np.logical_not(np.isnan(np.array(resTable.loc[:, 'VENTS MAE'].values.reshape(-1), float)))
 
   rankMAUC = np.nan * np.ones(resTable.shape[0])
   rankADAS = np.nan * np.ones(resTable.shape[0])
   rankVENTS = np.nan * np.ones(resTable.shape[0])
-  rankMAUC[notNanMaskMAUC] = rankdata(rankdata(-resTable.as_matrix(columns=['MAUC']).reshape(-1)[notNanMaskMAUC],
+  rankMAUC[notNanMaskMAUC] = rankdata(rankdata(-resTable.loc[:, 'MAUC'].values.reshape(-1)[notNanMaskMAUC],
     method='average'), method='average')
-  rankADAS[notNanMaskADAS] = rankdata(rankdata(resTable.as_matrix(columns=['ADAS MAE']).reshape(-1)[notNanMaskADAS], method='average'),
+  rankADAS[notNanMaskADAS] = rankdata(rankdata(resTable.loc[:, 'ADAS MAE'].values.reshape(-1)[notNanMaskADAS], method='average'),
                       method='average')
-  rankVENTS[notNanMaskVents] = rankdata(rankdata(resTable.as_matrix(columns=['VENTS MAE']).reshape(-1)[notNanMaskVents], method='average'),
+  rankVENTS[notNanMaskVents] = rankdata(rankdata(resTable.loc[:, 'VENTS MAE'].values.reshape(-1)[notNanMaskVents], method='average'),
                        method='average')
 
   rankBCA = np.nan * np.ones(resTable.shape[0])
@@ -237,16 +241,12 @@ def addOtherStatsTable(resTable):
   rankAdasCpa = np.nan * np.ones(resTable.shape[0])
   rankVentsWes = np.nan * np.ones(resTable.shape[0])
   rankVentsCpa = np.nan * np.ones(resTable.shape[0])
-  rankBCA[notNanMaskMAUC] = rankdata(rankdata(-resTable.as_matrix(columns=['BCA']).reshape(-1)[notNanMaskMAUC],
+  rankBCA[notNanMaskMAUC] = rankdata(rankdata(-resTable.loc[:, 'BCA'].values.reshape(-1)[notNanMaskMAUC],
     method='average'), method='average')
-  rankAdasWes[notNanMaskADAS] = rankdata(rankdata(resTable.as_matrix(
-    columns=['ADAS WES']).reshape(-1)[notNanMaskADAS], method='average'), method='average')
-  rankAdasCpa[notNanMaskADAS] = rankdata(rankdata(resTable.as_matrix(
-    columns=['ADAS CPA']).reshape(-1)[notNanMaskADAS], method='average'), method='average')
-  rankVentsWes[notNanMaskVents] = rankdata(rankdata(resTable.as_matrix(
-    columns=['VENTS WES']).reshape(-1)[notNanMaskVents], method='average'), method='average')
-  rankVentsCpa[notNanMaskVents] = rankdata(rankdata(resTable.as_matrix(
-    columns=['VENTS CPA']).reshape(-1)[notNanMaskVents], method='average'), method='average')
+  rankAdasWes[notNanMaskADAS] = rankdata(rankdata(resTable.loc[:, 'ADAS WES'].values.reshape(-1)[notNanMaskADAS], method='average'), method='average')
+  rankAdasCpa[notNanMaskADAS] = rankdata(rankdata(resTable.loc[:, 'ADAS CPA'].values.reshape(-1)[notNanMaskADAS], method='average'), method='average')
+  rankVentsWes[notNanMaskVents] = rankdata(rankdata(resTable.loc[:, 'VENTS WES'].values.reshape(-1)[notNanMaskVents], method='average'), method='average')
+  rankVentsCpa[notNanMaskVents] = rankdata(rankdata(resTable.loc[:, 'VENTS CPA'].values.reshape(-1)[notNanMaskVents], method='average'), method='average')
 
 
   rankOrder = np.nan * np.ones(resTable.shape[0])
@@ -430,7 +430,8 @@ if __name__ == '__main__':
     resDf = resDf.loc[idxToKeep, :]
     resDf.reset_index(inplace=True)
 
-    resDf['Date'] = [datetime.today() for _ in range(resDf.shape[0])]
+    resDf.loc[:,'Date'] = [ datetime.strptime('Jun 14 2019  2:00PM', '%b %d %Y %I:%M%p') for _ in range(resDf.shape[0])]
+
 
 
   nrInitEntries = resDf.shape[0]
@@ -445,7 +446,6 @@ if __name__ == '__main__':
   if nrFinalEntries > nrInitEntries:
     dataStruct = dict(res=resDf)
     pickle.dump(dataStruct, open(evalResFile, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
-
 
 
   resD2, resD3, _ = getD2D3deepCopy(resDf)
