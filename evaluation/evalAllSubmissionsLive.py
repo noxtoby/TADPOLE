@@ -124,9 +124,9 @@ class DropboxObj:
 
 
 
-def formatStrRemoveNan(strFmt, n):
+def formatStrRemoveNan(strFmt, n, replaceStr = '-'):
   if np.isnan(n):
-    return '-'
+    return replaceStr
   else:
     return strFmt % n
 
@@ -192,7 +192,7 @@ tr.d1 td {
   for f in range(evalResults['MAUC'].shape[0]):
     # text += '\n   <tr class="d%d">' % (f % 2)
     text += '\n   <tr class="rowD4Live">'
-    text += '<td>%s</td>' % formatStrRemoveNan('%.1f',evalResults['RANK'].iloc[f])
+    text += '<td>%s</td>' % formatStrRemoveNan('%.1f',evalResults['RANK'].iloc[f], replaceStr='999')
     text += '<td>%s</td><td>' % evalResults['FileName'].iloc[f]
     text += '</td><td>'.join(
       [formatStrRemoveNan(strFmt,n) for strFmt, n in zip(formatStrsMeasures, evalResultsPerm.loc[f, :])])
@@ -426,7 +426,7 @@ if __name__ == '__main__':
     resDf = dataStruct['res']
     # print(resDf.columns)
     # asda
-    idxToKeep = ~np.in1d(resDf['TeamName'], ['Consensus', 'Randomised'])
+    idxToKeep = ~np.in1d(resDf['TeamName'], ['Consensus', 'Randomised', 'ATRI-Biostat'])
     resDf = resDf.loc[idxToKeep, :]
     resDf.reset_index(inplace=True)
 
