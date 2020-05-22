@@ -18,6 +18,7 @@ tadpoleD1D2File = '../TADPOLE_D1_D2.csv'
 
 import pandas as pd
 import numpy as np
+from datetime import datetime
 Dtadpole=pd.read_csv(tadpoleD1D2File)
 
 # Create Diagnosis variable based on DXCHANGE
@@ -212,9 +213,15 @@ output.to_csv(str_out_final,header=True,index=False)
 
 
 print('Evaluate predictions')
-R=pd.read_csv('./IntermediateData/D4_dummy.csv')
+d4Df=pd.read_csv('./TADPOLE_D4_corr.csv')
+
+d4Df['CognitiveAssessmentDate'] = [datetime.strptime(x, '%Y-%m-%d') for x in d4Df['CognitiveAssessmentDate']]
+d4Df['ScanDate'] = [datetime.strptime(x, '%Y-%m-%d') for x in d4Df['ScanDate']]
+mapping = {'CN': 0, 'MCI': 1, 'AD': 2}
+d4Df.replace({'Diagnosis': mapping}, inplace=True)
+
 import evalOneSubmission as eos
-mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA = eos.evalOneSub(R,output)
+mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA = eos.evalOneSub(d4Df,output)
 
 print('Diagnosis:')
 print('mAUC = ' + "%0.3f" % mAUC)

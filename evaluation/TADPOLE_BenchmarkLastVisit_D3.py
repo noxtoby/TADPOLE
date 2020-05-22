@@ -337,3 +337,28 @@ submission_table.rename(columns={'RID': 'RID',
                                  'Ventricles_ICV50_CIUpper': 'Ventricles_ICV 50% CI upper'}, inplace=True)
 # * Write to file
 submission_table.to_csv(outputFile, index=False)
+
+
+print('Evaluate predictions')
+from datetime import datetime
+d4Df=pd.read_csv('./TADPOLE_D4_corr.csv')
+
+d4Df['CognitiveAssessmentDate'] = [datetime.strptime(x, '%Y-%m-%d') for x in d4Df['CognitiveAssessmentDate']]
+d4Df['ScanDate'] = [datetime.strptime(x, '%Y-%m-%d') for x in d4Df['ScanDate']]
+mapping = {'CN': 0, 'MCI': 1, 'AD': 2}
+d4Df.replace({'Diagnosis': mapping}, inplace=True)
+
+import evalOneSubmission as eos
+mAUC, bca, adasMAE, ventsMAE, adasWES, ventsWES, adasCPA, ventsCPA = eos.evalOneSub(d4Df,submission_table)
+
+print('Diagnosis:')
+print('mAUC = ' + "%0.3f" % mAUC)
+print('BAC = ' + "%0.3f" % bca)
+print('ADAS:')
+print('MAE = ' + "%0.3f" % adasMAE)
+print('WES = ' + "%0.3f" % adasWES)
+print('CPA = ' + "%0.3f" % adasCPA)
+print('VENTS:')
+print('MAE = ' + "%0.3e" % ventsMAE)
+print('WES = ' + "%0.3e" % ventsWES)
+print('CPA = ' + "%0.3f" % ventsCPA)
